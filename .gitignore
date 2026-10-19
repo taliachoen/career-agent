@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-test/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+!.env.test.example

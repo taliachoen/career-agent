@@ -1,0 +1,39 @@
+{
+  "name": "@career-agent/api",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "test:build": "node -e \"require('fs').rmSync('dist-test',{recursive:true,force:true})\" && tsc -p tsconfig.test.json",
+    "test:unit": "npm run test:build && node --test --test-reporter=spec dist-test/test/unit/",
+    "test:e2e": "npm run test:build && node --env-file=.env.test --test --test-reporter=spec --test-concurrency=1 dist-test/test/e2e/",
+    "test": "npm run test:build && node --test --test-reporter=spec dist-test/test/unit/ && node --env-file=.env.test --test --test-reporter=spec --test-concurrency=1 dist-test/test/e2e/",
+    "test:db:migrate": "node --env-file=.env.test ../../node_modules/prisma/build/index.js migrate deploy"
+  },
+  "dependencies": {
+    "@career-agent/types": "*",
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/core": "^12.1.2",
+    "@nestjs/jwt": "^12.0.3",
+    "@nestjs/platform-express": "^12.1.2",
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@career-agent/config": "*",
+    "@nestjs/cli": "^11.0.24",
+    "@types/node": "^26.6.5",
+    "prisma": "^6.19.3"
+  },
+  "type": "module"
+}
