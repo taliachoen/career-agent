@@ -34,10 +34,106 @@ describe("jobs (e2e)", () => {
     assert.equal(res.status, 201);
     assert.equal(typeof res.body.id, "string");
     assert.equal(res.body.title, jobBody.title);
-    assert.equal(res.body.url, jobBody.url);
     assert.equal(res.body.userId, user.id);
+    assert.equal(typeof res.body.createdAt, "string");
+    assert.equal("url" in res.body, false);
     const row = await app.prisma.job.findUniqueOrThrow({ where: { id: res.body.id } });
     assert.equal(row.userId, user.id);
+  });
+
+  it("the response includes the first posting, with source and site set by the server", async () => {
+    const user = await app.createUser();
+    const res = await app.request("POST", "/jobs", {
+      body: { ...jobBody, url: "https://www.LinkedIn.com/jobs/view/1" },
+      token: user.token,
+    });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.postings.length, 1);
+    const posting = res.body.postings[0];
+    assert.equal(typeof posting.id, "string");
+    assert.equal(posting.jobId, res.body.id);
+    assert.equal(posting.userId, user.id);
+    assert.equal(posting.url, "https://www.LinkedIn.com/jobs/view/1");
+    assert.equal(posting.site, "linkedin.com");
+    assert.equal(posting.source, "MANUAL");
+    assert.equal(posting.sourceMessageId, null);
+    assert.equal(typeof posting.createdAt, "string");
+  });
+
+  it("ignores source, site and sourceMessageId sent by the client", async () => {
+    const user = await app.createUser();
+    const res = await app.request("POST", "/jobs", {
+      body: {
+        ...jobBody,
+        url: "https://example.com/forged",
+        source: "EMAIL",
+        site: "evil.com",
+        sourceMessageId: "gmail-123",
+      },
+      token: user.token,
+    });
+    assert.equal(res.status, 201);
+    const posting = res.body.postings[0];
+    assert.equal(posting.source, "MANUAL");
+    assert.equal(posting.site, "example.com");
+    assert.equal(posting.sourceMessageId, null);
+  });
+
+  it("rejects a URL the user already has with 409 and creates no extra job", async () => {
+    const user = await app.createUser();
+    const first = await app.request("POST", "/jobs", { body: jobBody, token: user.token });
+    assert.equal(first.status, 201);
+
+    const second = await app.request("POST", "/jobs", {
+      body: { ...jobBody, title: "Another title" },
+      token: user.token,
+    });
+    assert.equal(second.status, 409);
+
+    const list = await app.request("GET", "/jobs", { token: user.token });
+    assert.deepEqual(ids(list.body), [first.body.id]);
+    assert.equal(await app.prisma.jobPosting.count({ where: { userId: user.id } }), 1);
+  });
+
+  it("allows the same URL for two different users", async () => {
+    const a = await app.createUser();
+    const b = await app.createUser();
+    const resA = await app.request("POST", "/jobs", { body: jobBody, token: a.token });
+    const resB = await app.request("POST", "/jobs", { body: jobBody, token: b.token });
+    assert.equal(resA.status, 201);
+    assert.equal(resB.status, 201);
+    assert.equal(resA.body.postings[0].url, resB.body.postings[0].url);
+    assert.notEqual(resA.body.id, resB.body.id);
+  });
+
+  it("GET /jobs returns the newest jobs first, each with its postings", async () => {
+    const user = await app.createUser();
+    const created: string[] = [];
+    for (const n of [1, 2, 3]) {
+      const res = await app.request("POST", "/jobs", {
+        body: { ...jobBody, url: `https://example.com/job-${n}` },
+        token: user.token,
+      });
+      created.push(res.body.id);
+    }
+    // Set explicit timestamps so the test does not depend on request timing.
+    // The middle job is the newest, the first job the oldest.
+    const times = [
+      new Date("2026-01-01T00:00:00Z"),
+      new Date("2026-03-01T00:00:00Z"),
+      new Date("2026-02-01T00:00:00Z"),
+    ];
+    for (const [i, id] of created.entries()) {
+      await app.prisma.job.update({ where: { id }, data: { createdAt: times[i] } });
+    }
+
+    const list = await app.request("GET", "/jobs", { token: user.token });
+    assert.equal(list.status, 200);
+    assert.deepEqual(ids(list.body), [created[1], created[2], created[0]]);
+    for (const job of list.body) {
+      assert.equal(job.postings.length, 1);
+      assert.equal(job.postings[0].jobId, job.id);
+    }
   });
 
   it("trims whitespace in submitted fields", async () => {
@@ -68,6 +164,8 @@ describe("jobs (e2e)", () => {
     const res = await app.request("GET", `/jobs/${job.id}`, { token: user.token });
     assert.equal(res.status, 200);
     assert.equal(res.body.id, job.id);
+    assert.equal(res.body.postings.length, 1);
+    assert.equal(res.body.postings[0].url, jobBody.url);
   });
 
   it("another user's job is 404, indistinguishable from a nonexistent job", async () => {
@@ -110,6 +208,7 @@ describe("jobs (e2e)", () => {
       { ...jobBody, company: "   " },
       { ...jobBody, description: 123 },
       { ...jobBody, url: "ftp://example.com" },
+      { ...jobBody, url: "http://" },
       { title: jobBody.title },
     ];
     for (const body of invalid) {

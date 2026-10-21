@@ -15,7 +15,7 @@ export interface TestApp {
   ) => Promise<{ status: number; body: any }>;
   /** Registers a user with a unique email, logs in, and tracks it for cleanup. */
   createUser: () => Promise<{ id: string; email: string; token: string }>;
-  /** Deletes only the users (and their jobs) created through createUser, then stops the app. */
+  /** Deletes only the users (and their jobs, whose postings cascade) created through createUser, then stops the app. */
   close: () => Promise<void>;
 }
 
