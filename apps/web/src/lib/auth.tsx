@@ -25,7 +25,7 @@ import type { Credentials } from "./validation";
 // it during the first render would not match the server-rendered HTML.
 type AuthState =
   | { status: "loading" }
-  | { status: "anonymous" }
+  | { status: "anonymous"; expired?: boolean }
   | { status: "authenticated"; session: Session };
 
 interface AuthContextValue {
@@ -94,14 +94,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return await apiRequest<T>(path, { token: token ?? undefined });
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
+          // The (app) layout sees `expired` and redirects with the explanation.
           clearSession();
-          setState({ status: "anonymous" });
-          router.replace("/login?reason=expired");
+          setState({ status: "anonymous", expired: true });
         }
         throw error;
       }
     },
-    [token, router],
+    [token],
   );
 
   const value = useMemo(

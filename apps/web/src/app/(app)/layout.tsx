@@ -11,8 +11,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (state.status === "anonymous") router.replace("/login");
-  }, [state.status, router]);
+    if (state.status === "anonymous") {
+      router.replace(state.expired ? "/login?reason=expired" : "/login");
+    }
+  }, [state, router]);
 
   if (state.status !== "authenticated") return <PageSkeleton />;
 
