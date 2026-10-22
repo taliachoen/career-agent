@@ -19,6 +19,7 @@ Monorepo, NestJS API, Next.js shell, PostgreSQL + Prisma, register/login with JW
 | Step | What | Done when |
 |---|---|---|
 | 1 | **Data model for the MVP** – ✅ *Jobs part done:* `Job` gets `createdAt` and is split from a new `JobPosting` (one job, many places it was seen: `url`, `site`, `source` MANUAL/EMAIL, `sourceMessageId`), with a unique `(userId, url)` on the posting for de-duplication. ⏳ *Still to do:* a `Profile` with CV text and a few basic preferences (role, location, work mode, keywords). | Migration applied, tests pass (jobs part: done) |
+| 2a | **Front-end foundation** – Hebrew RTL web app with Tailwind: register, login, route protection, and a read-only jobs list (title, company, date added, sites as links). Dev data comes from a seed script. Browser E2E tests on the test DB. | Register → jobs list works in the browser, also on a phone screen; E2E tests pass |
 | 2 | **`LlmProvider` interface** – an OpenAI implementation and a fake for tests. Structured JSON output. | Unit tests with the fake |
 | 3 | **Gmail connection** – OAuth with read-only scope, tokens stored encrypted. | User can connect and disconnect Gmail |
 | 4 | **Ingestion** – `POST /sync`: fetch recent emails, pre-filter, extract jobs with the LLM, save new jobs, skip duplicates. | Real alert emails become jobs |
@@ -60,6 +61,10 @@ Monorepo, NestJS API, Next.js shell, PostgreSQL + Prisma, register/login with JW
 | CV as pasted/extracted text, no file storage | Enough for scoring; storage is not needed yet |
 | `Job` split from `JobPosting` | The same job often arrives from several sites or alerts; one job with several postings keeps the ranked list free of duplicates. De-duplication is by `(userId, url)` on the posting. A composite foreign key `(jobId, userId)` guarantees a posting always has the same owner as its job |
 | node:test, manual validation, 404 for other users' resources | Kept from the existing code (see `CLAUDE.md`) |
+| No screen for adding a job by hand | Jobs will come from the emails (ingestion step). Until then, development data comes from a seed script. `POST /jobs` stays in the API but is not exposed in the UI |
+| Profile screen is built together with the CV | A profile without a CV has nothing to show; both arrive in the same step |
+| Hebrew UI, right-to-left, top navigation bar | One main screen today, a few later; a top bar works on a phone without a drawer. Layout uses logical CSS properties (`ms-`, `pe-`, `text-start`) so RTL needs no special cases |
+| Web token in `sessionStorage` | A conscious MVP compromise: simple, and it disappears when the tab closes. See Known gaps |
 
 ## Known gaps
 
@@ -67,3 +72,6 @@ Monorepo, NestJS API, Next.js shell, PostgreSQL + Prisma, register/login with JW
 - `POST /auth/register` returns 409 for an existing email, which reveals that the email is registered.
 - No refresh tokens: the access token lasts 1 hour, then the user logs in again.
 - No CI yet.
+- **The web token lives in `sessionStorage`** – readable by any script on the page (XSS) and lost when the tab closes. **Revisit this decision before the Gmail step**, when the app starts holding access to real mailbox data (an httpOnly cookie is the likely alternative, and needs API changes).
+- Page protection in the web app is client-side only (the token is not in a cookie, so there is no middleware). The protected data still comes from the API and needs the token, but the page shell is served without it.
+- The web app has no way to renew a token: after 1 hour the next API call returns 401, the token is cleared, and the user is sent to the login screen with an explanation.
