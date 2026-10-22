@@ -7,16 +7,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum JobSource {
+  MANUAL
+  EMAIL
+}
+
 model Job {
-  id          String @id @default(uuid())
+  id          String       @id @default(uuid())
   title       String
   company     String
   description String
-  url         String
   userId      String
-  user        User   @relation(fields: [userId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+  createdAt   DateTime     @default(now())
+  postings    JobPosting[]
 
-  @@index([userId])
+  // Target of JobPosting's composite foreign key (a posting must share its job's owner).
+  @@unique([id, userId])
+  @@index([userId, createdAt])
+}
+
+// A place where a job was seen. One job can have several postings.
+model JobPosting {
+  id              String    @id @default(uuid())
+  jobId           String
+  // Always the same as the job's userId; enforced by the composite foreign key.
+  userId          String
+  url             String
+  // Hostname of the url without a leading "www.", e.g. "linkedin.com".
+  site            String
+  source          JobSource
+  // Gmail message id, for postings found in an email.
+  sourceMessageId String?
+  createdAt       DateTime  @default(now())
+  job             Job       @relation(fields: [jobId, userId], references: [id, userId], onDelete: Cascade)
+
+  @@unique([userId, url])
+  @@index([jobId])
 }
 
 model User {

@@ -17,7 +17,7 @@ An AI-powered career assistant that will help job seekers find relevant openings
 apps/
   api/        NestJS REST API
     src/auth      Register, login, JWT guard, current user
-    src/jobs      Jobs CRUD, scoped to the authenticated user
+    src/jobs      Jobs and their postings, scoped to the authenticated user
     src/health    Health-check endpoint
     prisma/       Database schema and migrations
     test/         Unit and e2e tests
@@ -31,7 +31,7 @@ packages/
 
 **Done**
 - [x] Monorepo setup (API, web, shared packages)
-- [x] PostgreSQL schema with Prisma migrations (`User`, `Job`)
+- [x] PostgreSQL schema with Prisma migrations (`User`, `Job`, `JobPosting`)
 - [x] User registration and login with hashed passwords and JWT
 - [x] Protected jobs API – each user sees and creates only their own jobs
 - [x] Input validation on all endpoints
@@ -53,9 +53,9 @@ packages/
 | POST | `/auth/register` | – | Create an account |
 | POST | `/auth/login` | – | Log in, returns a JWT |
 | GET | `/auth/me` | JWT | Current user |
-| GET | `/jobs` | JWT | List the user's jobs |
-| GET | `/jobs/:id` | JWT | Get one job |
-| POST | `/jobs` | JWT | Add a job |
+| GET | `/jobs` | JWT | List the user's jobs, newest first, each with its postings |
+| GET | `/jobs/:id` | JWT | Get one job with its postings |
+| POST | `/jobs` | JWT | Add a job with its first posting (`url`); 409 if the user already has that URL |
 
 ## Getting Started
 

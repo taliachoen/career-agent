@@ -18,7 +18,7 @@ Monorepo, NestJS API, Next.js shell, PostgreSQL + Prisma, register/login with JW
 
 | Step | What | Done when |
 |---|---|---|
-| 1 | **Data model for the MVP** – `Job` gets `createdAt`, source fields (email id, sender) and a unique `(userId, url)` for de-duplication; a `Profile` with CV text and a few basic preferences (role, location, work mode, keywords). | Migration applied, tests pass |
+| 1 | **Data model for the MVP** – ✅ *Jobs part done:* `Job` gets `createdAt` and is split from a new `JobPosting` (one job, many places it was seen: `url`, `site`, `source` MANUAL/EMAIL, `sourceMessageId`), with a unique `(userId, url)` on the posting for de-duplication. ⏳ *Still to do:* a `Profile` with CV text and a few basic preferences (role, location, work mode, keywords). | Migration applied, tests pass (jobs part: done) |
 | 2 | **`LlmProvider` interface** – an OpenAI implementation and a fake for tests. Structured JSON output. | Unit tests with the fake |
 | 3 | **Gmail connection** – OAuth with read-only scope, tokens stored encrypted. | User can connect and disconnect Gmail |
 | 4 | **Ingestion** – `POST /sync`: fetch recent emails, pre-filter, extract jobs with the LLM, save new jobs, skip duplicates. | Real alert emails become jobs |
@@ -58,6 +58,7 @@ Monorepo, NestJS API, Next.js shell, PostgreSQL + Prisma, register/login with JW
 | Gmail read-only in the MVP | Least privilege; nothing in the MVP needs to change the mailbox |
 | No auto-apply | An email to an employer can't be taken back; the user stays in control |
 | CV as pasted/extracted text, no file storage | Enough for scoring; storage is not needed yet |
+| `Job` split from `JobPosting` | The same job often arrives from several sites or alerts; one job with several postings keeps the ranked list free of duplicates. De-duplication is by `(userId, url)` on the posting. A composite foreign key `(jobId, userId)` guarantees a posting always has the same owner as its job |
 | node:test, manual validation, 404 for other users' resources | Kept from the existing code (see `CLAUDE.md`) |
 
 ## Known gaps
