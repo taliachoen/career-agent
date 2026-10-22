@@ -40,7 +40,8 @@ npm workspaces monorepo:
 
 ## Tests
 
-- Node's built-in `node:test` – not Jest or Vitest.
+- API tests (unit and e2e) use Node's built-in `node:test` – not Jest or Vitest.
+- Browser tests of the web app use Playwright (`@playwright/test`). They run against the test DB (name ends in `_test`), never the dev DB.
 - New service logic → unit tests. New endpoint → e2e tests, including the unauthenticated case and the other-user case.
 - Tests never call a real LLM or Gmail; use fakes.
 

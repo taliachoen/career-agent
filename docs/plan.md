@@ -18,14 +18,11 @@ Monorepo, NestJS API, Next.js shell, PostgreSQL + Prisma, register/login with JW
 
 | Step | What | Done when |
 |---|---|---|
-| 1 | **Data model for the MVP** – ✅ *Jobs part done:* `Job` gets `createdAt` and is split from a new `JobPosting` (one job, many places it was seen: `url`, `site`, `source` MANUAL/EMAIL, `sourceMessageId`), with a unique `(userId, url)` on the posting for de-duplication. ⏳ *Still to do:* a `Profile` with CV text and a few basic preferences (role, location, work mode, keywords). | Migration applied, tests pass (jobs part: done) |
-| 2a | **Front-end foundation** – Hebrew RTL web app with Tailwind: register, login, route protection, and a read-only jobs list (title, company, date added, sites as links). Dev data comes from a seed script. Browser E2E tests on the test DB. | Register → jobs list works in the browser, also on a phone screen; E2E tests pass |
-| 2 | **`LlmProvider` interface** – an OpenAI implementation and a fake for tests. Structured JSON output. | Unit tests with the fake |
-| 3 | **Gmail connection** – OAuth with read-only scope, tokens stored encrypted. | User can connect and disconnect Gmail |
-| 4 | **Ingestion** – `POST /sync`: fetch recent emails, pre-filter, extract jobs with the LLM, save new jobs, skip duplicates. | Real alert emails become jobs |
-| 5 | **Scoring** – score 0–100, reasons, skill gaps, stored per job. Only new jobs are scored. | Every job has a stored score |
-| 6 | **Dashboard** – login, jobs sorted by score with reasons and link, status per job (new / relevant / not relevant / applied). | Usable end to end in the browser |
-| 7 | **Polish** – README with screenshots and architecture, demo data, known limitations. | Ready to show in an interview |
+| 1 | **Data model for the MVP, jobs part** – `Job` gets `createdAt` and is split from a new `JobPosting` (one job, many places it was seen: `url`, `site`, `source` MANUAL/EMAIL, `sourceMessageId`), with a unique `(userId, url)` on the posting for de-duplication. ✅ Done. (The `Profile` model moved to step 3.) | Migration applied, tests pass |
+| 2 | **Front-end** – Hebrew RTL web app with Tailwind: register, login, route protection, and a read-only jobs list (title, company, date added, sites as links). Dev data comes from a seed script. Browser E2E tests (Playwright) on the test DB. | Register → jobs list works in the browser, also on a phone screen; E2E tests pass |
+| 3 | **Profile, CV and AI scoring** – a `Profile` with CV text and a few basic preferences (role, location, work mode, keywords), plus its screen. The `LlmProvider` interface (OpenAI implementation, a fake for tests, structured JSON output). Scoring 0–100 with reasons and skill gaps, stored per job; only new jobs are scored. The list shows score and reasons, sorted by score, with a status per job (new / relevant / not relevant / applied). | Every job has a stored score; the list is ranked |
+| 4 | **Gmail and ingestion** – OAuth with read-only scope, tokens stored encrypted (user can connect and disconnect). `POST /sync`: fetch recent emails, pre-filter, extract jobs with the LLM, save new jobs, skip duplicates. | Real alert emails become scored jobs |
+| 5 | **Polish** – README with screenshots and architecture, demo data, known limitations. | Ready to show in an interview |
 
 ## Right after the MVP
 

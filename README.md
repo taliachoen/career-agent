@@ -83,6 +83,15 @@ npm run dev:api   # http://localhost:3001
 npm run dev:web   # http://localhost:3000
 ```
 
+### Demo data
+One command creates a demo user and 10 sample Full Stack jobs (some posted on several sites) in the development database:
+```bash
+npm run seed -w @career-agent/api
+```
+Log in with **demo@example.com** / **demo-password-123**.
+
+It is safe to run again: it deletes and recreates only the demo user's jobs and never touches other users. The job links are made up, so most of them open a 404.
+
 ### Tests
 ```bash
 cp apps/api/.env.test.example apps/api/.env.test   # database name must end in _test
