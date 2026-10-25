@@ -60,7 +60,7 @@ packages/
 ## Getting Started
 
 ### Prerequisites
-- Node.js 22+
+- Node.js 24+
 - PostgreSQL
 
 ### Setup
