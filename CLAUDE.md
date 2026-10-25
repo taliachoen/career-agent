@@ -56,3 +56,9 @@ npm workspaces monorepo:
 ## Definition of done
 
 `npm run typecheck`, the tests and the build all pass. Then give a short summary: what changed, why, and what I should review.
+
+## Git workflow
+
+- Every step starts on a new branch from main: step-<number>-<short-name>, or chore-<short-name> for maintenance.
+- Never commit to main directly.
+- Don't commit or push unless I ask. I review the changes and commit myself.
