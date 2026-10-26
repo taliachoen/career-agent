@@ -9,7 +9,9 @@ if (!url) {
 
 const databaseName = new URL(url).pathname.replace(/^\//, "");
 if (!databaseName.endsWith("_test")) {
-  console.error(`Refusing to start the e2e API on database "${databaseName}": the name must end in "_test".`);
+  console.error(
+    `Refusing to start the e2e API on database "${databaseName}": the name must end in "_test".`,
+  );
   process.exit(1);
 }
 

@@ -18,8 +18,10 @@ function setup(options: { findUniqueResult?: JobWithPostings | null; createError
   const prisma = {
     job: {
       findMany: async (args: unknown) => (calls.push({ method: "findMany", args }), []),
-      findUnique: async (args: unknown) =>
-        (calls.push({ method: "findUnique", args }), options.findUniqueResult ?? null),
+      findUnique: async (args: unknown) => (
+        calls.push({ method: "findUnique", args }),
+        options.findUniqueResult ?? null
+      ),
       create: async (args: { data: object }) => {
         calls.push({ method: "create", args });
         if (options.createError) throw options.createError;

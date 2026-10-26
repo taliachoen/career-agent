@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-test
+dist-seed
+.next
+.next-e2e
+test-results
+playwright-report
+next-env.d.ts
+apps/api/prisma/migrations
+package-lock.json

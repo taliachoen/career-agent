@@ -23,7 +23,10 @@ export default function RegisterPage() {
     event.preventDefault();
     if (pending) return;
     const data = new FormData(event.currentTarget);
-    const parsed = parseRegister(String(data.get("email") ?? ""), String(data.get("password") ?? ""));
+    const parsed = parseRegister(
+      String(data.get("email") ?? ""),
+      String(data.get("password") ?? ""),
+    );
     if (!parsed.ok) {
       setFieldErrors(parsed.errors);
       setFormError(null);

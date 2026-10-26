@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, SESSION_KEY, createUserViaApi, logInThroughUi, uniqueEmail } from "./support/users";
+import {
+  PASSWORD,
+  SESSION_KEY,
+  createUserViaApi,
+  logInThroughUi,
+  uniqueEmail,
+} from "./support/users";
 
 test("register, land on the jobs list, and see the empty state", async ({ page }) => {
   const email = uniqueEmail();

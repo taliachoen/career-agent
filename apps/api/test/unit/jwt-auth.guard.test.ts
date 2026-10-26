@@ -15,7 +15,10 @@ function guardWith(verify: (token: string) => Promise<{ sub: string }>) {
 describe("JwtAuthGuard", () => {
   it("rejects a request without an Authorization header", async () => {
     const guard = guardWith(async () => ({ sub: "user-1" }));
-    await assert.rejects(() => guard.canActivate(contextFor({ headers: {} })), UnauthorizedException);
+    await assert.rejects(
+      () => guard.canActivate(contextFor({ headers: {} })),
+      UnauthorizedException,
+    );
   });
 
   it("rejects a non-Bearer scheme", async () => {

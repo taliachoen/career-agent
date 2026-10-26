@@ -62,18 +62,12 @@ export class JobsController {
   }
 
   @Get(":id")
-  findOne(
-    @Param("id") id: string,
-    @Req() request: AuthenticatedRequest,
-  ): Promise<JobWithPostings> {
+  findOne(@Param("id") id: string, @Req() request: AuthenticatedRequest): Promise<JobWithPostings> {
     return this.jobsService.findOneForUser(id, request.user.id);
   }
 
   @Post()
-  create(
-    @Body() body: unknown,
-    @Req() request: AuthenticatedRequest,
-  ): Promise<JobWithPostings> {
+  create(@Body() body: unknown, @Req() request: AuthenticatedRequest): Promise<JobWithPostings> {
     return this.jobsService.create(parseCreateJobInput(body), request.user.id);
   }
 }
