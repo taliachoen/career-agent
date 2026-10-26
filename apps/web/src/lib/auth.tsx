@@ -36,6 +36,8 @@ interface AuthContextValue {
   logout: () => void;
   /** Authenticated GET. A 401 clears the session and sends the user to the login screen. */
   authedGet: <T>(path: string) => Promise<T>;
+  /** Authenticated PUT with a JSON body; handles a 401 like `authedGet`. */
+  authedPut: <T>(path: string, body: unknown) => Promise<T>;
 }
 
 export class RegisteredButLoginFailed extends Error {}
@@ -88,10 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const token = state.status === "authenticated" ? state.session.token : null;
 
-  const authedGet = useCallback(
-    async <T,>(path: string): Promise<T> => {
+  const authedRequest = useCallback(
+    async <T,>(path: string, method: "GET" | "PUT", body?: unknown): Promise<T> => {
       try {
-        return await apiRequest<T>(path, { token: token ?? undefined });
+        return await apiRequest<T>(path, { method, body, token: token ?? undefined });
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
           // The (app) layout sees `expired` and redirects with the explanation.
@@ -104,9 +106,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [token],
   );
 
+  const authedGet = useCallback(
+    <T,>(path: string): Promise<T> => authedRequest<T>(path, "GET"),
+    [authedRequest],
+  );
+
+  const authedPut = useCallback(
+    <T,>(path: string, body: unknown): Promise<T> => authedRequest<T>(path, "PUT", body),
+    [authedRequest],
+  );
+
   const value = useMemo(
-    () => ({ state, login, register, logout, authedGet }),
-    [state, login, register, logout, authedGet],
+    () => ({ state, login, register, logout, authedGet, authedPut }),
+    [state, login, register, logout, authedGet, authedPut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

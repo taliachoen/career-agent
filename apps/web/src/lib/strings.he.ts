@@ -4,6 +4,7 @@ export const he = {
   nav: {
     logout: "התנתקות",
     jobs: "משרות",
+    profile: "פרופיל",
   },
 
   common: {
@@ -24,6 +25,28 @@ export const he = {
     badCredentials: "האימייל או הסיסמה שגויים",
     sessionExpired: "פג תוקף ההתחברות, יש להתחבר שוב",
     registeredLoginFailed: "ההרשמה הצליחה, יש להתחבר",
+    cvRequired: "יש להדביק את קורות החיים",
+    cvTooShort: "קורות החיים קצרים מדי (לפחות 200 תווים)",
+    cvTooLong: "קורות החיים ארוכים מדי (עד 20,000 תווים)",
+    lookingForTooLong: "הטקסט ארוך מדי (עד 2,000 תווים)",
+  },
+
+  profile: {
+    title: "פרופיל",
+    loadFailed: "לא הצלחנו לטעון את הפרופיל.",
+    introTitle: "למה הפרופיל חשוב?",
+    introBody:
+      "בקרוב המשרות שלך ידורגו לפי קורות החיים וההעדפות שתכתבי כאן. ככל שהפרופיל מדויק יותר, הדירוג יהיה מדויק יותר.",
+    cvLabel: "קורות חיים",
+    cvHint: "הדביקי כאן את קורות החיים שלך כטקסט: ניסיון, השכלה וכישורים. לפחות 200 תווים.",
+    lookingForLabel: "מה את מחפשת",
+    lookingForHint:
+      "אופציונלי. תפקיד, אזור, היקף משרה ושיטת עבודה, למשל: Full Stack ג'וניור, מרכז, היברידי.",
+    remaining: (count: number) => `נותרו ${count.toLocaleString("he-IL")} תווים`,
+    over: (count: number) => `חריגה של ${count.toLocaleString("he-IL")} תווים`,
+    submit: "שמירה",
+    saved: "הפרופיל נשמר",
+    updatedAt: "עודכן לאחרונה:",
   },
 
   login: {

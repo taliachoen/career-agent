@@ -26,6 +26,13 @@ export interface JobPosting {
   createdAt: string;
 }
 
+// `updatedAt` is null while the user has not saved a profile yet.
+export interface Profile {
+  cvText: string;
+  lookingFor: string;
+  updatedAt: string | null;
+}
+
 export interface JobWithPostings {
   id: string;
   title: string;
