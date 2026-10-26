@@ -58,7 +58,7 @@ npm workspaces monorepo:
 
 `npm run typecheck`, the tests and the build all pass. Then give a short summary: what changed, why, and what I should review.
 
-At the end of every step, before I commit, run the `code-reviewer` subagent on the branch, then handle its findings or report them in the summary.
+At the end of every step, before I commit, run the `code-reviewer` subagent on the branch, then handle its findings or report them in the summary. The reviewer has no Bash, so when invoking it, pass in the prompt: the `git diff` against `git merge-base main HEAD` (committed and uncommitted changes), and the list of new untracked files (`git status --short`).
 
 ## Git workflow
 
