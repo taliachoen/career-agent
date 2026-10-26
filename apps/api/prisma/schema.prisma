@@ -52,4 +52,17 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
   jobs         Job[]
+  profile      Profile?
+}
+
+// One per user: the CV and what the user is looking for, both as free text.
+// Personal data, so it goes away with the user (Cascade).
+model Profile {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cvText     String
+  lookingFor String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
