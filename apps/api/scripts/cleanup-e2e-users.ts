@@ -9,9 +9,7 @@ if (!url) {
 }
 const databaseName = new URL(url).pathname.replace(/^\//, "");
 if (!databaseName.endsWith("_test")) {
-  throw new Error(
-    `Refusing to clean database "${databaseName}": the name must end in "_test".`,
-  );
+  throw new Error(`Refusing to clean database "${databaseName}": the name must end in "_test".`);
 }
 
 const where = { email: { startsWith: "e2e-", endsWith: "@example.com" } };

@@ -9,9 +9,7 @@ import { useAuth } from "../../../lib/auth";
 import { he } from "../../../lib/strings.he";
 
 type LoadState =
-  | { status: "loading" }
-  | { status: "error" }
-  | { status: "done"; jobs: JobWithPostings[] };
+  { status: "loading" } | { status: "error" } | { status: "done"; jobs: JobWithPostings[] };
 
 function JobListSkeleton() {
   return (

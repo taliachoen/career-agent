@@ -69,7 +69,8 @@ const JOBS: SeedJob[] = [
   {
     title: "Junior Full Stack Developer",
     company: "Orbit Software",
-    description: "Join a mentoring-friendly team building a SaaS scheduling product with React and Node.js.",
+    description:
+      "Join a mentoring-friendly team building a SaaS scheduling product with React and Node.js.",
     hoursAgo: 98,
     urls: [
       "https://www.drushim.co.il/job/27712004/orbit-software",

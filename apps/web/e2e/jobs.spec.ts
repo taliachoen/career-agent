@@ -39,8 +39,16 @@ test("a job row shows title, company, date and a site link that opens in a new t
 
 test("the newest job is listed first", async ({ page, request }) => {
   const { email, token } = await createUserViaApi(request);
-  await createJob(request, token, { title: "Older Job", company: "A", url: "https://example.com/e2e-old" });
-  await createJob(request, token, { title: "Newer Job", company: "B", url: "https://example.com/e2e-new" });
+  await createJob(request, token, {
+    title: "Older Job",
+    company: "A",
+    url: "https://example.com/e2e-old",
+  });
+  await createJob(request, token, {
+    title: "Newer Job",
+    company: "B",
+    url: "https://example.com/e2e-new",
+  });
 
   await logInThroughUi(page, email);
 

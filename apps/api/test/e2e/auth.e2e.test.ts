@@ -23,7 +23,9 @@ describe("auth (e2e)", () => {
 
   it("registers a user and returns safe user data only", async () => {
     const email = newEmail().toUpperCase();
-    const res = await app.request("POST", "/auth/register", { body: { email, password: PASSWORD } });
+    const res = await app.request("POST", "/auth/register", {
+      body: { email, password: PASSWORD },
+    });
     // Not created through createUser(), so remove it explicitly.
     await app.prisma.user.deleteMany({ where: { email: email.toLowerCase() } });
     assert.equal(res.status, 201);

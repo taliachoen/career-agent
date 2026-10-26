@@ -22,7 +22,10 @@ interface Credentials {
   password: string;
 }
 
-function parseCredentials(body: unknown, { strictPassword }: { strictPassword: boolean }): Credentials {
+function parseCredentials(
+  body: unknown,
+  { strictPassword }: { strictPassword: boolean },
+): Credentials {
   if (typeof body !== "object" || body === null) {
     throw new BadRequestException("Request body must be a JSON object");
   }

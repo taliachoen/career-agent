@@ -44,24 +44,36 @@ describe("AuthService", () => {
     failCreateWith(
       new Prisma.PrismaClientKnownRequestError("unique", { code: "P2002", clientVersion: "test" }),
     );
-    await assert.rejects(() => service.register("a@example.com", "plain-password-123"), ConflictException);
+    await assert.rejects(
+      () => service.register("a@example.com", "plain-password-123"),
+      ConflictException,
+    );
   });
 
   it("register does not swallow unexpected database errors", async () => {
     const { service, failCreateWith } = setup();
     failCreateWith(new Error("connection lost"));
-    await assert.rejects(() => service.register("a@example.com", "plain-password-123"), /connection lost/);
+    await assert.rejects(
+      () => service.register("a@example.com", "plain-password-123"),
+      /connection lost/,
+    );
   });
 
   it("login rejects an unknown email with UnauthorizedException", async () => {
     const { service } = setup(null);
-    await assert.rejects(() => service.login("nobody@example.com", "whatever"), UnauthorizedException);
+    await assert.rejects(
+      () => service.login("nobody@example.com", "whatever"),
+      UnauthorizedException,
+    );
   });
 
   it("login rejects a wrong password with UnauthorizedException", async () => {
     const passwordHash = await bcrypt.hash("right-password", 4);
     const { service } = setup({ id: "user-1", email: "a@example.com", passwordHash, createdAt });
-    await assert.rejects(() => service.login("a@example.com", "wrong-password"), UnauthorizedException);
+    await assert.rejects(
+      () => service.login("a@example.com", "wrong-password"),
+      UnauthorizedException,
+    );
   });
 
   it("login returns a token and a user without passwordHash", async () => {
