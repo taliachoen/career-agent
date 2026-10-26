@@ -6,6 +6,41 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_BYTES = 72;
 
+// Mirrors apps/api/src/profile/profile.ts. Lengths are counted after trim(), as on the server.
+export const CV_MIN_LENGTH = 200;
+export const CV_MAX_LENGTH = 20_000;
+export const LOOKING_FOR_MAX_LENGTH = 2_000;
+
+export interface ProfileFieldErrors {
+  cvText?: string;
+  lookingFor?: string;
+}
+
+export function parseProfile(
+  cvText: string,
+  lookingFor: string,
+):
+  | { ok: true; value: { cvText: string; lookingFor: string } }
+  | { ok: false; errors: ProfileFieldErrors } {
+  const cv = cvText.trim();
+  const looking = lookingFor.trim();
+  const errors: ProfileFieldErrors = {};
+
+  if (cv === "") {
+    errors.cvText = he.errors.cvRequired;
+  } else if (cv.length < CV_MIN_LENGTH) {
+    errors.cvText = he.errors.cvTooShort;
+  } else if (cv.length > CV_MAX_LENGTH) {
+    errors.cvText = he.errors.cvTooLong;
+  }
+  if (looking.length > LOOKING_FOR_MAX_LENGTH) {
+    errors.lookingFor = he.errors.lookingForTooLong;
+  }
+
+  if (errors.cvText || errors.lookingFor) return { ok: false, errors };
+  return { ok: true, value: { cvText: cv, lookingFor: looking } };
+}
+
 export interface FieldErrors {
   email?: string;
   password?: string;
