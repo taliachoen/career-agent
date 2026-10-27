@@ -21,6 +21,7 @@ model Job {
   user        User         @relation(fields: [userId], references: [id])
   createdAt   DateTime     @default(now())
   postings    JobPosting[]
+  score       JobScore?
 
   // Target of JobPosting's composite foreign key (a posting must share its job's owner).
   @@unique([id, userId])
@@ -44,6 +45,29 @@ model JobPosting {
 
   @@unique([userId, url])
   @@index([jobId])
+}
+
+// The AI score of a job against the user's profile. One per job; scoring again replaces it.
+// It is stale once the profile changes after `scoredAt` (computed, not stored).
+model JobScore {
+  id       String   @id @default(uuid())
+  jobId    String   @unique
+  // Always the same as the job's userId; enforced by the composite foreign key.
+  userId   String
+  // Integer 0-100, checked in code before saving.
+  score    Int
+  summary  String
+  matches  String[]
+  gaps     String[]
+  // The model that produced this score, e.g. "gpt-6-luna".
+  model    String
+  scoredAt DateTime @default(now())
+  job      Job      @relation(fields: [jobId, userId], references: [id, userId], onDelete: Cascade)
+
+  // Prisma requires a unique on the composite foreign key's fields for a one-to-one relation;
+  // the single-column unique on jobId is what really enforces one score per job.
+  @@unique([jobId, userId])
+  @@index([userId])
 }
 
 model User {
