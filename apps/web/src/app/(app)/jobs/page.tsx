@@ -1,15 +1,18 @@
 "use client";
 
-import type { JobWithPostings } from "@career-agent/types";
+import type { JobWithPostings, Profile } from "@career-agent/types";
 import { useCallback, useEffect, useState } from "react";
 import { JobRow } from "../../../components/JobRow";
 import { Notice } from "../../../components/Notice";
+import { ScoringBar } from "../../../components/ScoringBar";
 import { ApiError } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth";
 import { he } from "../../../lib/strings.he";
 
 type LoadState =
-  { status: "loading" } | { status: "error" } | { status: "done"; jobs: JobWithPostings[] };
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "done"; jobs: JobWithPostings[]; hasProfile: boolean };
 
 function JobListSkeleton() {
   return (
@@ -33,18 +36,31 @@ export default function JobsPage() {
   const { authedGet } = useAuth();
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
 
-  const fetchJobs = useCallback(async () => {
-    setLoad({ status: "loading" });
-    try {
-      const jobs = await authedGet<JobWithPostings[]>("/jobs");
-      setLoad({ status: "done", jobs });
-    } catch (error) {
-      // A 401 is already handled by authedGet (redirect to the login screen).
-      if (!(error instanceof ApiError && error.status === 401)) {
-        setLoad({ status: "error" });
+  // `quiet` reloads the list without replacing it by the skeleton (used after scoring).
+  const fetchJobs = useCallback(
+    async (quiet = false) => {
+      if (!quiet) setLoad({ status: "loading" });
+      try {
+        const [jobs, profile] = await Promise.all([
+          authedGet<JobWithPostings[]>("/jobs"),
+          // The list matters more than the scoring bar: if only the profile request fails,
+          // assume a profile exists. POST /jobs/score answers 400 if it does not.
+          authedGet<Profile>("/profile").catch((error: unknown) => {
+            if (error instanceof ApiError && error.status === 401) throw error;
+            return null;
+          }),
+        ]);
+        // No saved profile yet: `updatedAt` is null.
+        setLoad({ status: "done", jobs, hasProfile: profile === null || profile.updatedAt !== null });
+      } catch (error) {
+        // A 401 is already handled by authedGet (redirect to the login screen).
+        if (!(error instanceof ApiError && error.status === 401) && !quiet) {
+          setLoad({ status: "error" });
+        }
       }
-    }
-  }, [authedGet]);
+    },
+    [authedGet],
+  );
 
   useEffect(() => {
     void fetchJobs();
@@ -77,11 +93,19 @@ export default function JobsPage() {
       )}
 
       {load.status === "done" && load.jobs.length > 0 && (
-        <ul className="divide-y divide-stone-200 rounded-md border border-stone-200 bg-white">
-          {load.jobs.map((job) => (
-            <JobRow key={job.id} job={job} />
-          ))}
-        </ul>
+        <div className="space-y-4">
+          <ScoringBar
+            hasProfile={load.hasProfile}
+            pendingCount={load.jobs.filter((job) => !job.score || job.score.stale).length}
+            onScored={() => fetchJobs(true)}
+            onProfileMissing={() => setLoad({ ...load, hasProfile: false })}
+          />
+          <ul className="divide-y divide-stone-200 rounded-md border border-stone-200 bg-white">
+            {load.jobs.map((job) => (
+              <JobRow key={job.id} job={job} />
+            ))}
+          </ul>
+        </div>
       )}
     </>
   );

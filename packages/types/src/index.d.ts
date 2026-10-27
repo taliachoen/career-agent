@@ -33,6 +33,24 @@ export interface Profile {
   updatedAt: string | null;
 }
 
+export interface JobScore {
+  score: number;
+  summary: string;
+  matches: string[];
+  gaps: string[];
+  model: string;
+  scoredAt: string;
+  // The profile was saved after this score was made.
+  stale: boolean;
+}
+
+export interface ScoreRunResult {
+  scored: number;
+  failed: number;
+  // Jobs that still need a score, failed ones included.
+  remaining: number;
+}
+
 export interface JobWithPostings {
   id: string;
   title: string;
@@ -40,4 +58,6 @@ export interface JobWithPostings {
   description: string;
   createdAt: string;
   postings: JobPosting[];
+  // null until the job is scored.
+  score: JobScore | null;
 }
