@@ -10,7 +10,12 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
-import type { CreateJobInput, JobView, ScoreRunResult } from "./job.js";
+import {
+  JOB_FIELD_MAX_LENGTHS,
+  type CreateJobInput,
+  type JobView,
+  type ScoreRunResult,
+} from "./job.js";
 import { JobsService } from "./jobs.service.js";
 import { ScoringService } from "./scoring.service.js";
 
@@ -26,7 +31,7 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
-function parseCreateJobInput(body: unknown): CreateJobInput {
+export function parseCreateJobInput(body: unknown): CreateJobInput {
   if (typeof body !== "object" || body === null) {
     throw new BadRequestException("Request body must be a JSON object");
   }
@@ -38,6 +43,9 @@ function parseCreateJobInput(body: unknown): CreateJobInput {
     const value = raw[field];
     if (typeof value !== "string" || value.trim() === "") {
       errors.push(`${field} must be a non-empty string`);
+    } else if (value.trim().length > JOB_FIELD_MAX_LENGTHS[field]) {
+      // The message names the field and the limit, never the value.
+      errors.push(`${field} must be at most ${JOB_FIELD_MAX_LENGTHS[field]} characters`);
     } else {
       input[field] = value.trim();
     }

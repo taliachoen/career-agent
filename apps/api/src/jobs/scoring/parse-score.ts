@@ -12,6 +12,13 @@ export class InvalidScoreError extends Error {}
 
 const FIELDS = ["score", "summary", "matches", "gaps"];
 
+// In right-to-left text a regular hyphen is a neutral character, so "ו-Node.js" is shown
+// as "Node.js-ו". The Hebrew maqaf (U+05BE) is a Hebrew letter-like character and keeps
+// the order. Only a hyphen that directly follows a Hebrew letter is replaced.
+export function useHebrewMaqaf(text: string): string {
+  return text.replace(/([א-ת])-/g, "$1־");
+}
+
 function parseText(value: unknown, field: string, maxLength: number): string {
   if (typeof value !== "string" || value.trim() === "") {
     throw new InvalidScoreError(`${field} must be a non-empty string`);
@@ -24,7 +31,7 @@ function parseText(value: unknown, field: string, maxLength: number): string {
   if (text.includes("\u0000")) {
     throw new InvalidScoreError(`${field} contains a null character`);
   }
-  return text;
+  return useHebrewMaqaf(text);
 }
 
 function parseList(value: unknown, field: string): string[] {

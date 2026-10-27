@@ -105,5 +105,4 @@ A job description is untrusted text (from step 4 it comes from emails). It is se
 - The web app has no way to renew a token: after 1 hour the next API call returns 401, the token is cleared, and the user is sent to the login screen with an explanation.
 - Scoring has no per-user budget or rate limit beyond 10 jobs per call. A user can press the button repeatedly and spend tokens.
 - The "one scoring run per user" lock is in the memory of one API process; with several processes it would not hold.
-- `POST /jobs` does not limit the length of the job description (title and company are not capped either). Fix this before step 4, when jobs start arriving from emails. Scoring already cuts the description at 8,000 characters before sending it, but the database stores whatever is posted.
 - Scoring takes pending jobs newest first and a failed job stays pending. Ten or more jobs that always fail (for example a description the model refuses) would block older jobs from ever being scored. Nothing remembers a failure yet; fix it if it shows up in real use (for example by storing the last failed attempt and trying those last).

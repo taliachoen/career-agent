@@ -44,7 +44,7 @@ Rules:
 - Base "matches" and "gaps" only on what is written in the CV and the job. Do not invent skills or experience the CV does not state.
 - "matches": up to ${MAX_LIST_ITEMS} short points where the CV meets the job. "gaps": up to ${MAX_LIST_ITEMS} short points of what the job asks for and the CV lacks, or where the job conflicts with the candidate's wishes. Either list may be empty.
 - "summary": one or two sentences.
-- Write "summary", "matches" and "gaps" in Hebrew. Technology and product names stay in their original form.
+- Write "summary", "matches" and "gaps" in Hebrew. Technology and product names stay in their original form. After a Hebrew letter, write a prefix hyphen as the Hebrew maqaf "־" (U+05BE), not the regular "-" (for example "ו־Node.js", "ה־Lead").
 - Output only the JSON object.`;
 
 // Untrusted text must not be able to close a tag and "leave" the data block, so every

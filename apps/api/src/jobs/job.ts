@@ -26,6 +26,15 @@ export interface JobScoreView {
 // What the jobs endpoints return.
 export type JobView = JobWithPostings & { score: JobScoreView | null };
 
+// Length limits for POST /jobs (after trimming). Jobs will also arrive from emails, so the
+// database must not store whatever is posted.
+export const JOB_FIELD_MAX_LENGTHS = {
+  title: 300,
+  company: 200,
+  description: 20_000,
+  url: 2_000,
+} as const;
+
 // What a client may send. The owner (userId) always comes from the authenticated user;
 // the posting's source and site are set by the server.
 export interface CreateJobInput {
