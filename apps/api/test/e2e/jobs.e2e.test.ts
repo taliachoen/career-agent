@@ -200,6 +200,40 @@ describe("jobs (e2e)", () => {
     assert.deepEqual(victimJobs.body, []);
   });
 
+  it("rejects a field over its length limit with 400, naming field and limit but not the value", async () => {
+    const user = await app.createUser();
+    const tooLong: [string, number, string][] = [
+      ["title", 300, "T".repeat(301)],
+      ["company", 200, "C".repeat(201)],
+      ["description", 20_000, "D".repeat(20_001)],
+      ["url", 2_000, "https://example.com/" + "u".repeat(2_000)],
+    ];
+    for (const [field, limit, value] of tooLong) {
+      const res = await app.request("POST", "/jobs", {
+        body: { ...jobBody, [field]: value },
+        token: user.token,
+      });
+      assert.equal(res.status, 400, field);
+      assert.deepEqual(res.body.message, [`${field} must be at most ${limit} characters`]);
+      assert.ok(!JSON.stringify(res.body).includes(value.slice(0, 50)), field);
+    }
+    assert.deepEqual((await app.request("GET", "/jobs", { token: user.token })).body, []);
+  });
+
+  it("accepts values exactly at the length limits", async () => {
+    const user = await app.createUser();
+    const res = await app.request("POST", "/jobs", {
+      body: {
+        title: "T".repeat(300),
+        company: "C".repeat(200),
+        description: "D".repeat(20_000),
+        url: "https://example.com/" + "u".repeat(1_980),
+      },
+      token: user.token,
+    });
+    assert.equal(res.status, 201);
+  });
+
   it("rejects invalid job input with 400 and creates nothing", async () => {
     const user = await app.createUser();
     const invalid: unknown[] = [
