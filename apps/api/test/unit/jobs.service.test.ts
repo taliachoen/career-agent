@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ConflictException, NotFoundException } from "@nestjs/common";
-import type { CreateJobInput, JobWithPostings } from "../../src/jobs/job.js";
+import type { CreateJobInput, JobWithPostingsAndScore } from "../../src/jobs/job.js";
 import { JobsService } from "../../src/jobs/jobs.service.js";
 import { siteFromUrl } from "../../src/jobs/site.js";
 import type { PrismaService } from "../../src/prisma/prisma.service.js";
@@ -13,7 +13,7 @@ const input: CreateJobInput = {
   url: "https://www.Example.com/job",
 };
 
-function setup(options: { findUniqueResult?: JobWithPostings | null; createError?: unknown } = {}) {
+function setup(options: { findUniqueResult?: JobWithPostingsAndScore | null; createError?: unknown } = {}) {
   const calls: { method: string; args: any }[] = [];
   const prisma = {
     job: {
@@ -28,6 +28,9 @@ function setup(options: { findUniqueResult?: JobWithPostings | null; createError
         return { id: "job-1", ...args.data };
       },
     },
+    profile: {
+      findUnique: async () => ({ updatedAt: null }),
+    },
   } as unknown as PrismaService;
   return { service: new JobsService(prisma), calls };
 }
@@ -38,16 +41,27 @@ describe("JobsService", () => {
     await service.findAllForUser("user-1");
     assert.equal(calls[0].method, "findMany");
     assert.deepEqual(calls[0].args.where, { userId: "user-1" });
-    assert.deepEqual(calls[0].args.include, { postings: { orderBy: { createdAt: "asc" } } });
+    assert.deepEqual(calls[0].args.include, {
+      postings: { orderBy: { createdAt: "asc" } },
+      score: true,
+    });
     assert.deepEqual(calls[0].args.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
   });
 
   it("findOneForUser queries by id AND owner and includes postings", async () => {
-    const job = { id: "job-1", userId: "user-1", postings: [] } as unknown as JobWithPostings;
+    const job = {
+      id: "job-1",
+      userId: "user-1",
+      postings: [],
+      score: null,
+    } as unknown as JobWithPostingsAndScore;
     const { service, calls } = setup({ findUniqueResult: job });
     assert.deepEqual(await service.findOneForUser("job-1", "user-1"), job);
     assert.deepEqual(calls[0].args.where, { id: "job-1", userId: "user-1" });
-    assert.deepEqual(calls[0].args.include, { postings: { orderBy: { createdAt: "asc" } } });
+    assert.deepEqual(calls[0].args.include, {
+      postings: { orderBy: { createdAt: "asc" } },
+      score: true,
+    });
   });
 
   it("findOneForUser throws NotFoundException when nothing matches", async () => {

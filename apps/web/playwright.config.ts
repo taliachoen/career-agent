@@ -27,7 +27,14 @@ export default defineConfig({
     {
       command: `node ${API_ENV} e2e/support/require-test-db.mjs && node ${API_ENV} ../api/dist/main.js`,
       url: `http://localhost:${API_PORT}/health`,
-      env: { PORT: String(API_PORT), WEB_ORIGIN: `http://localhost:${WEB_PORT}` },
+      env: {
+        PORT: String(API_PORT),
+        WEB_ORIGIN: `http://localhost:${WEB_PORT}`,
+        // Browser tests never reach OpenAI: the fake provider, and no key even if the
+        // developer's shell has one.
+        LLM_PROVIDER: "fake",
+        OPENAI_API_KEY: "",
+      },
       reuseExistingServer: false,
       timeout: 60_000,
     },

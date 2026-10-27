@@ -3,14 +3,16 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   Post,
   Req,
   UseGuards,
 } from "@nestjs/common";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
-import type { CreateJobInput, JobWithPostings } from "./job.js";
+import type { CreateJobInput, JobView, ScoreRunResult } from "./job.js";
 import { JobsService } from "./jobs.service.js";
+import { ScoringService } from "./scoring.service.js";
 
 const REQUIRED_FIELDS = ["title", "company", "description", "url"] as const;
 
@@ -54,20 +56,31 @@ function parseCreateJobInput(body: unknown): CreateJobInput {
 @Controller("jobs")
 @UseGuards(JwtAuthGuard)
 export class JobsController {
-  constructor(private readonly jobsService: JobsService) {}
+  constructor(
+    private readonly jobsService: JobsService,
+    private readonly scoringService: ScoringService,
+  ) {}
 
   @Get()
-  findAll(@Req() request: AuthenticatedRequest): Promise<JobWithPostings[]> {
+  findAll(@Req() request: AuthenticatedRequest): Promise<JobView[]> {
     return this.jobsService.findAllForUser(request.user.id);
   }
 
+  // Scores up to 10 of the user's jobs that have no score or a stale one. No body.
+  // Declared before the ":id" routes so "score" is never taken for a job id.
+  @Post("score")
+  @HttpCode(200)
+  score(@Req() request: AuthenticatedRequest): Promise<ScoreRunResult> {
+    return this.scoringService.scorePending(request.user.id);
+  }
+
   @Get(":id")
-  findOne(@Param("id") id: string, @Req() request: AuthenticatedRequest): Promise<JobWithPostings> {
+  findOne(@Param("id") id: string, @Req() request: AuthenticatedRequest): Promise<JobView> {
     return this.jobsService.findOneForUser(id, request.user.id);
   }
 
   @Post()
-  create(@Body() body: unknown, @Req() request: AuthenticatedRequest): Promise<JobWithPostings> {
+  create(@Body() body: unknown, @Req() request: AuthenticatedRequest): Promise<JobView> {
     return this.jobsService.create(parseCreateJobInput(body), request.user.id);
   }
 }

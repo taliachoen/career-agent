@@ -19,8 +19,25 @@ export interface TestApp {
   close: () => Promise<void>;
 }
 
-export async function startTestApp(): Promise<TestApp> {
-  const app = await NestFactory.create(AppModule, { logger: false });
+export interface StartOptions {
+  /** Default "fake": tests never reach a real model. "openai" is only for the missing-key case. */
+  llmProvider?: "fake" | "openai";
+}
+
+export async function startTestApp(options: StartOptions = {}): Promise<TestApp> {
+  // The provider is chosen when the app is created. The key is always removed first, so a
+  // key in the developer's shell can never make a test call OpenAI.
+  const saved = { provider: process.env.LLM_PROVIDER, key: process.env.OPENAI_API_KEY };
+  process.env.LLM_PROVIDER = options.llmProvider ?? "fake";
+  delete process.env.OPENAI_API_KEY;
+  let app;
+  try {
+    app = await NestFactory.create(AppModule, { logger: false });
+  } finally {
+    if (saved.provider === undefined) delete process.env.LLM_PROVIDER;
+    else process.env.LLM_PROVIDER = saved.provider;
+    if (saved.key !== undefined) process.env.OPENAI_API_KEY = saved.key;
+  }
   await app.listen(0, "127.0.0.1");
   const baseUrl = await app.getUrl();
   const prisma = new PrismaClient();
