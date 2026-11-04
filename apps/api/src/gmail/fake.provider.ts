@@ -1,0 +1,95 @@
+import { createHash } from "node:crypto";
+import {
+  GMAIL_READONLY_SCOPE,
+  GmailProviderError,
+  type ExchangedTokens,
+  type GmailProvider,
+} from "./gmail-provider.js";
+
+// Deterministic stand-in for tests and local development. It never leaves the process.
+// The authorization code steers what the "Google" side answers:
+//   fake-ok            granted gmail.readonly, with a refresh token (what the auth URL points to)
+//   fake-wrong-scope   granted more than gmail.readonly
+//   fake-no-refresh    no refresh token in the answer
+// A refresh token containing "revoked" is dead (invalid_grant), like one Google expired.
+// A token containing "revoke-fails" makes revoking fail, like a network error.
+export class FakeGmailProvider implements GmailProvider {
+  readonly name = "fake";
+
+  // Tokens passed to revokeToken, so tests can check that a disconnect really revoked.
+  static readonly revokedTokens: string[] = [];
+  // PKCE challenges handed out by buildAuthUrl; exchangeCode only accepts a matching verifier.
+  private readonly challenges = new Set<string>();
+  private counter = 0;
+
+  constructor(private readonly redirectUri: string) {}
+
+  checkReady(): void {}
+
+  buildAuthUrl({ state, codeChallenge }: { state: string; codeChallenge: string }): string {
+    this.challenges.add(codeChallenge);
+    const url = new URL(this.redirectUri);
+    url.searchParams.set("code", "fake-ok");
+    url.searchParams.set("state", state);
+    url.searchParams.set("code_challenge", codeChallenge);
+    url.searchParams.set("code_challenge_method", "S256");
+    return url.toString();
+  }
+
+  async exchangeCode({
+    code,
+    codeVerifier,
+  }: {
+    code: string;
+    codeVerifier: string;
+  }): Promise<ExchangedTokens> {
+    const challenge = createHash("sha256").update(codeVerifier).digest("base64url");
+    if (!this.challenges.has(challenge)) {
+      throw new GmailProviderError("invalid_grant");
+    }
+    this.counter += 1;
+    const accessToken = `fake-access-${this.counter}`;
+    if (code === "fake-ok") {
+      return {
+        accessToken,
+        refreshToken: `fake-refresh-${this.counter}`,
+        scopes: [GMAIL_READONLY_SCOPE],
+      };
+    }
+    if (code === "fake-wrong-scope") {
+      return {
+        accessToken,
+        refreshToken: `fake-refresh-${this.counter}`,
+        scopes: [GMAIL_READONLY_SCOPE, "https://www.googleapis.com/auth/gmail.modify"],
+      };
+    }
+    if (code === "fake-no-refresh") {
+      return { accessToken, refreshToken: null, scopes: [GMAIL_READONLY_SCOPE] };
+    }
+    throw new GmailProviderError("invalid_grant");
+  }
+
+  async getEmail(): Promise<string> {
+    return "fake.user@example.com";
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<string> {
+    if (
+      refreshToken.includes("revoked") ||
+      FakeGmailProvider.revokedTokens.includes(refreshToken)
+    ) {
+      throw new GmailProviderError("invalid_grant");
+    }
+    return "fake-access-refreshed";
+  }
+
+  async revokeToken(token: string): Promise<void> {
+    if (token.includes("revoke-fails")) {
+      throw new GmailProviderError("request_failed");
+    }
+    if (token.includes("revoked") || FakeGmailProvider.revokedTokens.includes(token)) {
+      throw new GmailProviderError("invalid_grant");
+    }
+    FakeGmailProvider.revokedTokens.push(token);
+  }
+}

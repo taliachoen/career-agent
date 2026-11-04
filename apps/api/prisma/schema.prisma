@@ -77,6 +77,38 @@ model User {
   createdAt    DateTime @default(now())
   jobs         Job[]
   profile      Profile?
+  gmail        GmailConnection?
+}
+
+enum GmailConnectionStatus {
+  // The user started connecting but there is no token yet. Shown as "not connected".
+  PENDING
+  CONNECTED
+  // Google no longer accepts the refresh token (expired, revoked, ...). The token is deleted.
+  NEEDS_RECONNECT
+}
+
+// One per user: the Gmail connection. No row means "not connected". Holds secrets, so it is
+// never selected whole: see GmailService, which always lists the columns it needs.
+model GmailConnection {
+  id                    String                @id @default(uuid())
+  userId                String                @unique
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status                GmailConnectionStatus @default(PENDING)
+  googleEmail           String?
+  // AES-256-GCM, see token-crypto.ts. The access token is never stored.
+  encryptedRefreshToken String?
+  // The scope Google granted, checked to be exactly gmail.readonly before saving.
+  scope                 String?
+  connectedAt           DateTime?
+  lastVerifiedAt        DateTime?
+  // The pending OAuth flow: a single-use nonce (also inside the signed state) and the PKCE
+  // code verifier (encrypted). All three are cleared when the callback consumes them.
+  oauthNonce            String?
+  oauthCodeVerifier     String?
+  oauthExpiresAt        DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 }
 
 // One per user: the CV and what the user is looking for, both as free text.

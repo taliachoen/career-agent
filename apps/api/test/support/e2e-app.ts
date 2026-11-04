@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 import { AppModule } from "../../src/app.module.js";
 
 export const PASSWORD = "correct-horse-battery";
+// 32 bytes, base64. Test only.
+export const TEST_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
 
 export interface TestApp {
   prisma: PrismaClient;
@@ -12,7 +14,7 @@ export interface TestApp {
     method: string,
     path: string,
     options?: { body?: unknown; token?: string },
-  ) => Promise<{ status: number; body: any }>;
+  ) => Promise<{ status: number; body: any; location: string | null }>;
   /** Registers a user with a unique email, logs in, and tracks it for cleanup. */
   createUser: () => Promise<{ id: string; email: string; token: string }>;
   /** Deletes only the users (and their jobs, whose postings cascade) created through createUser, then stops the app. */
@@ -30,6 +32,9 @@ export async function startTestApp(options: StartOptions = {}): Promise<TestApp>
   const saved = { provider: process.env.LLM_PROVIDER, key: process.env.OPENAI_API_KEY };
   process.env.LLM_PROVIDER = options.llmProvider ?? "fake";
   delete process.env.OPENAI_API_KEY;
+  // Gmail is always the fake, and encryption uses a fixed test key unless .env.test has one.
+  process.env.GMAIL_PROVIDER = "fake";
+  process.env.TOKEN_ENCRYPTION_KEY ||= TEST_ENCRYPTION_KEY;
   let app;
   try {
     app = await NestFactory.create(AppModule, { logger: false });
@@ -46,6 +51,8 @@ export async function startTestApp(options: StartOptions = {}): Promise<TestApp>
   const request: TestApp["request"] = async (method, path, options = {}) => {
     const response = await fetch(baseUrl + path, {
       method,
+      // Redirects (the Gmail callback) are inspected, not followed.
+      redirect: "manual",
       headers: {
         ...(options.body !== undefined ? { "content-type": "application/json" } : {}),
         ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
@@ -53,7 +60,12 @@ export async function startTestApp(options: StartOptions = {}): Promise<TestApp>
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     });
     const text = await response.text();
-    return { status: response.status, body: text ? JSON.parse(text) : null };
+    const isJson = response.headers.get("content-type")?.includes("application/json");
+    return {
+      status: response.status,
+      body: text && isJson ? JSON.parse(text) : null,
+      location: response.headers.get("location"),
+    };
   };
 
   return {
