@@ -52,6 +52,7 @@ npm workspaces monorepo:
 - Don't add queues, Redis, Docker, workers, RAG, embeddings or agent frameworks unless the current step needs them.
 - Migrations: show me the generated SQL before applying it. Never edit an applied migration. Never run `prisma migrate reset` on the dev database.
 - Stay in the scope of the task. If you notice another problem, mention it instead of fixing it.
+- A server you start in the background (dev servers, Playwright's web servers), you stop before you finish. Check that ports 3000, 3001, 3100 and 3101 are free at the end of the task.
 - Gmail access is **read-only** in the MVP. The app never sends email except the user's own digest (post-MVP), and never applies to jobs on the user's behalf.
 
 ## Definition of done
