@@ -6,6 +6,7 @@ import { Notice } from "../../../components/Notice";
 import { ApiError } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth";
 import { he } from "../../../lib/strings.he";
+import { GmailConnectionCard } from "./GmailConnectionCard";
 import { ProfileForm } from "./ProfileForm";
 
 type LoadState = { status: "loading" } | { status: "error" } | { status: "done"; profile: Profile };
@@ -60,6 +61,8 @@ export default function ProfilePage() {
       )}
 
       {load.status === "done" && <ProfileForm initial={load.profile} />}
+
+      <GmailConnectionCard />
     </>
   );
 }
