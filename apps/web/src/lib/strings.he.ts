@@ -49,6 +49,36 @@ export const he = {
     updatedAt: "עודכן לאחרונה:",
   },
 
+  gmail: {
+    title: "חיבור Gmail",
+    intro:
+      "חיברי את תיבת הדואר כדי שנוכל למצוא בה התראות על משרות. ההרשאה היא לקריאה בלבד: האפליקציה לא שולחת מיילים ולא משנה דבר בתיבה.",
+    loadFailed: "לא הצלחנו לבדוק את מצב החיבור.",
+    notConnected: "Gmail לא מחובר.",
+    connected: "מחובר:",
+    connect: "חברי Gmail",
+    connecting: "מעבירה ל-Google...",
+    disconnect: "נתקי",
+    disconnecting: "מנתקת...",
+    needsReconnectTitle: "צריך לחבר את Gmail מחדש",
+    needsReconnectBody:
+      "ההרשאה ל-Gmail כבר לא תקפה (בגרסת הבדיקה של Google היא פגה אחרי 7 ימים). יש לחבר מחדש.",
+    reconnect: "חברי מחדש",
+    notAvailable: "חיבור Gmail אינו מוגדר בשרת.",
+    connectFailed: "לא הצלחנו להתחיל את החיבור. נסי שוב בעוד רגע.",
+    disconnectFailed: "לא הצלחנו לנתק. נסי שוב בעוד רגע.",
+    disconnected: "Gmail נותק והגישה בוטלה.",
+    disconnectedNotRevoked:
+      "Gmail נותק מהאפליקציה, אבל לא הצלחנו לבטל את ההרשאה אצל Google. אפשר להסיר אותה ידנית בהגדרות חשבון Google, בסעיף אבטחה ← אפליקציות של צד שלישי.",
+    result: {
+      connected: "Gmail חובר בהצלחה.",
+      denied: "החיבור בוטל ולא ניתנה הרשאה. אפשר לנסות שוב מתי שתרצי.",
+      scope_error:
+        "Google אישרה הרשאות שונות מהנדרש (קריאה בלבד), ולכן החיבור לא נשמר. נסי שוב ואשרי רק את ההרשאה המבוקשת.",
+      error: "החיבור נכשל. נסי שוב.",
+    },
+  },
+
   login: {
     title: "התחברות",
     submit: "התחברות",

@@ -34,6 +34,11 @@ export default defineConfig({
         // developer's shell has one.
         LLM_PROVIDER: "fake",
         OPENAI_API_KEY: "",
+        // Same for Google: the fake provider answers, and its "consent screen" sends the
+        // browser straight to this API's callback. The key is for tests only.
+        GMAIL_PROVIDER: "fake",
+        GOOGLE_REDIRECT_URI: `http://localhost:${API_PORT}/gmail/oauth/callback`,
+        TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64"),
       },
       reuseExistingServer: false,
       timeout: 60_000,

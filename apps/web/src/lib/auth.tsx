@@ -40,6 +40,8 @@ interface AuthContextValue {
   authedPut: <T>(path: string, body: unknown) => Promise<T>;
   /** Authenticated POST without a body; handles a 401 like `authedGet`. */
   authedPost: <T>(path: string) => Promise<T>;
+  /** Authenticated DELETE; handles a 401 like `authedGet`. */
+  authedDelete: <T>(path: string) => Promise<T>;
 }
 
 export class RegisteredButLoginFailed extends Error {}
@@ -93,7 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const token = state.status === "authenticated" ? state.session.token : null;
 
   const authedRequest = useCallback(
-    async <T,>(path: string, method: "GET" | "PUT" | "POST", body?: unknown): Promise<T> => {
+    async <T,>(
+      path: string,
+      method: "GET" | "PUT" | "POST" | "DELETE",
+      body?: unknown,
+    ): Promise<T> => {
       try {
         return await apiRequest<T>(path, { method, body, token: token ?? undefined });
       } catch (error) {
@@ -123,9 +129,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [authedRequest],
   );
 
+  const authedDelete = useCallback(
+    <T,>(path: string): Promise<T> => authedRequest<T>(path, "DELETE"),
+    [authedRequest],
+  );
+
   const value = useMemo(
-    () => ({ state, login, register, logout, authedGet, authedPut, authedPost }),
-    [state, login, register, logout, authedGet, authedPut, authedPost],
+    () => ({ state, login, register, logout, authedGet, authedPut, authedPost, authedDelete }),
+    [state, login, register, logout, authedGet, authedPut, authedPost, authedDelete],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

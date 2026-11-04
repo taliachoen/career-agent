@@ -61,3 +61,19 @@ export interface JobWithPostings {
   // null until the job is scored.
   score: JobScore | null;
 }
+
+// Gmail connection. Never carries a token; `email` is the connected (or last connected) address.
+export interface GmailStatus {
+  state: "not_connected" | "connected" | "needs_reconnect";
+  email: string | null;
+}
+
+export interface GmailConnectResult {
+  authUrl: string;
+}
+
+// `revoked` is false when Google could not be reached: the local tokens are gone anyway,
+// and the user should remove the app in their Google account settings.
+export interface GmailDisconnectResult {
+  revoked: boolean;
+}
