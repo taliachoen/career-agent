@@ -38,8 +38,8 @@ interface AuthContextValue {
   authedGet: <T>(path: string) => Promise<T>;
   /** Authenticated PUT with a JSON body; handles a 401 like `authedGet`. */
   authedPut: <T>(path: string, body: unknown) => Promise<T>;
-  /** Authenticated POST without a body; handles a 401 like `authedGet`. */
-  authedPost: <T>(path: string) => Promise<T>;
+  /** Authenticated POST, with a JSON body if given; handles a 401 like `authedGet`. */
+  authedPost: <T>(path: string, body?: unknown) => Promise<T>;
   /** Authenticated DELETE; handles a 401 like `authedGet`. */
   authedDelete: <T>(path: string) => Promise<T>;
 }
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const authedPost = useCallback(
-    <T,>(path: string): Promise<T> => authedRequest<T>(path, "POST"),
+    <T,>(path: string, body?: unknown): Promise<T> => authedRequest<T>(path, "POST", body),
     [authedRequest],
   );
 

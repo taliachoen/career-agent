@@ -1,10 +1,11 @@
 "use client";
 
-import type { JobWithPostings, Profile } from "@career-agent/types";
+import type { GmailStatus, JobWithPostings, Profile } from "@career-agent/types";
 import { useCallback, useEffect, useState } from "react";
 import { JobRow } from "../../../components/JobRow";
 import { Notice } from "../../../components/Notice";
 import { ScoringBar } from "../../../components/ScoringBar";
+import { SyncBar } from "../../../components/SyncBar";
 import { ApiError } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth";
 import { he } from "../../../lib/strings.he";
@@ -12,7 +13,8 @@ import { he } from "../../../lib/strings.he";
 type LoadState =
   | { status: "loading" }
   | { status: "error" }
-  | { status: "done"; jobs: JobWithPostings[]; hasProfile: boolean };
+  // `gmail` is null when its state could not be read: the sync bar is then left out.
+  | { status: "done"; jobs: JobWithPostings[]; hasProfile: boolean; gmail: GmailStatus | null };
 
 function JobListSkeleton() {
   return (
@@ -41,7 +43,7 @@ export default function JobsPage() {
     async (quiet = false) => {
       if (!quiet) setLoad({ status: "loading" });
       try {
-        const [jobs, profile] = await Promise.all([
+        const [jobs, profile, gmail] = await Promise.all([
           authedGet<JobWithPostings[]>("/jobs"),
           // The list matters more than the scoring bar: if only the profile request fails,
           // assume a profile exists. POST /jobs/score answers 400 if it does not.
@@ -49,9 +51,19 @@ export default function JobsPage() {
             if (error instanceof ApiError && error.status === 401) throw error;
             return null;
           }),
+          // Like the profile: the list matters more than the sync bar.
+          authedGet<GmailStatus>("/gmail/status").catch((error: unknown) => {
+            if (error instanceof ApiError && error.status === 401) throw error;
+            return null;
+          }),
         ]);
         // No saved profile yet: `updatedAt` is null.
-        setLoad({ status: "done", jobs, hasProfile: profile === null || profile.updatedAt !== null });
+        setLoad({
+          status: "done",
+          jobs,
+          hasProfile: profile === null || profile.updatedAt !== null,
+          gmail,
+        });
       } catch (error) {
         // A 401 is already handled by authedGet (redirect to the login screen).
         if (!(error instanceof ApiError && error.status === 401) && !quiet) {
@@ -83,6 +95,12 @@ export default function JobsPage() {
             {he.common.retry}
           </button>
         </Notice>
+      )}
+
+      {load.status === "done" && load.gmail && (
+        <div className="mb-4">
+          <SyncBar gmail={load.gmail} onSynced={() => fetchJobs(true)} />
+        </div>
       )}
 
       {load.status === "done" && load.jobs.length === 0 && (

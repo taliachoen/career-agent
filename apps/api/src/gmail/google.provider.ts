@@ -4,10 +4,15 @@ import {
   GmailNotConfiguredError,
   GmailProviderError,
   type ExchangedTokens,
+  type GmailMessage,
   type GmailProvider,
 } from "./gmail-provider.js";
+import { parseGmailMessage } from "./gmail-message.js";
 
 const PROFILE_URL = "https://gmail.googleapis.com/gmail/v1/users/me/profile";
+const MESSAGES_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
+// A Gmail call that takes longer is given up, so one slow message cannot hold a sync.
+const REQUEST_TIMEOUT_MS = 15_000;
 
 export interface GoogleConfig {
   clientId?: string;
@@ -83,6 +88,47 @@ export class GoogleGmailProvider implements GmailProvider {
         throw new GmailProviderError("request_failed");
       }
       return token;
+    } catch (error) {
+      throw toProviderError(error);
+    }
+  }
+
+  async listMessageIds(input: {
+    accessToken: string;
+    query: string;
+    maxResults: number;
+    pageToken?: string;
+  }): Promise<{ ids: string[]; nextPageToken: string | null }> {
+    try {
+      const client = this.client();
+      client.setCredentials({ access_token: input.accessToken });
+      const url = new URL(MESSAGES_URL);
+      url.searchParams.set("q", input.query);
+      url.searchParams.set("maxResults", String(input.maxResults));
+      if (input.pageToken) url.searchParams.set("pageToken", input.pageToken);
+      const response = await client.request<{
+        messages?: { id?: unknown }[];
+        nextPageToken?: unknown;
+      }>({ url: url.toString(), timeout: REQUEST_TIMEOUT_MS });
+      const ids = (response.data.messages ?? [])
+        .map((message) => message.id)
+        .filter((id): id is string => typeof id === "string");
+      const next = response.data.nextPageToken;
+      return { ids, nextPageToken: typeof next === "string" && next !== "" ? next : null };
+    } catch (error) {
+      throw toProviderError(error);
+    }
+  }
+
+  async getMessage(accessToken: string, id: string): Promise<GmailMessage> {
+    try {
+      const client = this.client();
+      client.setCredentials({ access_token: accessToken });
+      const response = await client.request<unknown>({
+        url: `${MESSAGES_URL}/${encodeURIComponent(id)}?format=full`,
+        timeout: REQUEST_TIMEOUT_MS,
+      });
+      return parseGmailMessage(id, response.data);
     } catch (error) {
       throw toProviderError(error);
     }

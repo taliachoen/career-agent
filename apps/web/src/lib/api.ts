@@ -57,6 +57,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (!response.ok) {
     throw new ApiError(response.status, messagesFrom(payload));
   }
+  // 204 No Content (a delete) has no body by design.
+  if (response.status === 204) {
+    return undefined as T;
+  }
   if (payload === null) {
     throw new NetworkError("Unexpected empty response");
   }

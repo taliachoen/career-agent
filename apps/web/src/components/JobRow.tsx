@@ -24,7 +24,7 @@ function PointList({ title, items }: { title: string; items: string[] }) {
 }
 
 // The score row is one button: the badge and the summary open the matches and gaps.
-function ScoreSection({ score }: { score: JobScore }) {
+function ScoreSection({ score, snippetOnly }: { score: JobScore; snippetOnly: boolean }) {
   const [open, setOpen] = useState(false);
   const detailsId = useId();
   return (
@@ -43,6 +43,7 @@ function ScoreSection({ score }: { score: JobScore }) {
         </span>
         <span className="sr-only">{he.scoring.details}</span>
       </button>
+      {snippetOnly && <p className="mt-1 text-xs text-stone-600">{he.jobs.snippetScore}</p>}
       {score.stale && <p className="mt-1 text-xs text-amber-800">{he.scoring.stale}</p>}
       {open && (
         <div id={detailsId} className="mt-2 space-y-3 rounded-md bg-stone-50 px-3 py-2">
@@ -66,6 +67,12 @@ export function JobRow({ job }: { job: JobWithPostings }) {
           </h2>
           <p className="text-stone-600">
             <bdi>{job.company}</bdi>
+            {job.location && (
+              <>
+                {" · "}
+                <bdi>{job.location}</bdi>
+              </>
+            )}
           </p>
         </div>
         <time
@@ -76,7 +83,9 @@ export function JobRow({ job }: { job: JobWithPostings }) {
           {formatDate(job.createdAt)}
         </time>
       </div>
-      {job.score && <ScoreSection score={job.score} />}
+      {job.score && (
+        <ScoreSection score={job.score} snippetOnly={job.descriptionSource === "EMAIL_SNIPPET"} />
+      )}
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
         <span className="text-sm text-stone-500">{he.jobs.publishedOn}</span>
         {job.postings.map((posting) => (

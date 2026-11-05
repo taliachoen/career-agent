@@ -12,6 +12,7 @@ import {
   LlmNotConfiguredError,
   type LlmProvider,
 } from "../llm/llm-provider.js";
+import { mapWithConcurrency } from "../concurrency.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import type { ScoreRunResult } from "./job.js";
 import { InvalidScoreError, parseScoreResponse } from "./scoring/parse-score.js";
@@ -20,23 +21,6 @@ import { buildScoringRequest } from "./scoring/prompt.js";
 // Jobs scored per call, and how many model requests run at the same time.
 export const MAX_JOBS_PER_RUN = 10;
 const CONCURRENCY = 3;
-
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const index = next++;
-      results[index] = await fn(items[index]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
-}
 
 // What may be logged about a failed job. LlmError and InvalidScoreError messages are written
 // to be content-free (a kind, a status, a field name). Any other error (for example a database
@@ -107,7 +91,13 @@ export class ScoringService {
     const [jobs, pendingTotal] = await Promise.all([
       this.prisma.job.findMany({
         where: pending,
-        select: { id: true, title: true, company: true, description: true },
+        select: {
+          id: true,
+          title: true,
+          company: true,
+          description: true,
+          descriptionSource: true,
+        },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: MAX_JOBS_PER_RUN,
       }),

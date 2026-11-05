@@ -1,3 +1,4 @@
+import { fakeExtractionAnswer } from "./fake-extraction.js";
 import {
   LlmError,
   type JsonCompletion,
@@ -18,6 +19,12 @@ export class FakeLlmProvider implements LlmProvider {
   async completeJson(request: JsonCompletionRequest): Promise<JsonCompletion> {
     const { user } = request;
     const inputTokens = Math.ceil((request.system.length + user.length) / 4);
+
+    // Job extraction from an alert email (the schema name is the one in ingest/extraction).
+    if (request.schemaName === "job_extraction") {
+      const text = fakeExtractionAnswer(user);
+      return { text, model: "fake-model", inputTokens, outputTokens: Math.ceil(text.length / 4) };
+    }
 
     if (user.includes("[[fake:fail]]")) {
       throw new LlmError("Fake provider: simulated failure");

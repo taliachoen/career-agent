@@ -70,6 +70,28 @@ export const he = {
     disconnected: "Gmail נותק והגישה בוטלה.",
     disconnectedNotRevoked:
       "Gmail נותק מהאפליקציה, אבל לא הצלחנו לבטל את ההרשאה אצל Google. אפשר להסיר אותה ידנית בהגדרות חשבון Google, בסעיף אבטחה ← אפליקציות של צד שלישי.",
+    senders: {
+      title: "שולחים",
+      intro:
+        "המערכת קוראת רק מיילים שלא נקראו מהשולחים האלה, ורק מהם שולחת טקסט לחילוץ משרות. מיילים אישיים לא נקראים.",
+      loadFailed: "לא הצלחנו לטעון את רשימת השולחים.",
+      knownTitle: "שולחים מוכרים",
+      knownHint: "ברירת מחדל, לקריאה בלבד. דומיין כולל גם את תתי־הדומיינים שלו.",
+      mineTitle: "השולחים שלי",
+      mineEmpty: "עוד לא הוספת שולחים.",
+      addLabel: "הוספת שולח",
+      addHint:
+        "כתובת מייל או דומיין, למשל jobs2web.com. ספק מייל כללי (כמו gmail.com) אפשרי רק ככתובת מלאה.",
+      add: "הוספה",
+      adding: "מוסיפה...",
+      remove: (value: string) => `מחיקת השולח ${value}`,
+      removeButton: "מחיקה",
+      invalid:
+        "הערך אינו תקין: יש להזין כתובת מייל מלאה או דומיין. ספק מייל כללי (כמו gmail.com) אפשרי רק ככתובת מלאה.",
+      duplicate: "השולח הזה כבר ברשימה.",
+      tooMany: "אי אפשר להוסיף יותר מ־50 שולחים.",
+      failed: "לא הצלחנו לשמור את השינוי. נסי שוב בעוד רגע.",
+    },
     result: {
       connected: "Gmail חובר בהצלחה.",
       denied: "החיבור בוטל ולא ניתנה הרשאה. אפשר לנסות שוב מתי שתרצי.",
@@ -101,7 +123,37 @@ export const he = {
     emptyBody: "משרות יופיעו כאן כשיגיעו מהמיילים שלך.",
     publishedOn: "פורסם ב:",
     addedOn: "נוספה",
+    snippetScore: "הדירוג מבוסס על תקציר מהמייל, לא על תיאור המשרה המלא.",
     opensInNewTab: "נפתח בלשונית חדשה",
+  },
+
+  sync: {
+    button: "סנכרני מיילים",
+    running: "מסנכרנת...",
+    needsConnection: "כדי לקלוט משרות מהמייל צריך לחבר את Gmail.",
+    needsReconnection: "החיבור ל-Gmail כבר לא תקף, ויש לחבר אותו מחדש.",
+    toProfile: "לחיבור Gmail",
+    nothingNew: "אין מיילים חדשים מהשולחים המוכרים.",
+    summary: (checked: number, added: number, attached: number, scored: number) =>
+      `נבדקו ${checked} מיילים · משרות חדשות: ${added} · צורפו למשרה קיימת: ${attached} · דורגו: ${scored}`,
+    duplicates: (count: number) => `${count} משרות כבר היו שמורות אצלך.`,
+    rejected: (count: number) => `${count} משרות נדחו כי הקישור שלהן לא מופיע במייל.`,
+    unauthenticated: (count: number) =>
+      `${count} מיילים לא נקראו כי Gmail לא אימתה שהם נשלחו בפועל מהשולח.`,
+    failedEmails: (count: number) => `${count} מיילים נכשלו, והמערכת תנסה אותם שוב בסנכרון הבא.`,
+    moreAvailable: "יש עוד מיילים שלא נקראו: אפשר לסנכרן שוב.",
+    scoreFailed: (count: number) => `${count} משרות לא דורגו.`,
+    scoringRemaining: (count: number) =>
+      `${count} משרות עדיין ממתינות לדירוג: אפשר ללחוץ על "דרגי משרות".`,
+    scoringSkippedNoProfile: "המשרות נשמרו. כדי לדרג אותן צריך קודם למלא את קורות החיים בפרופיל.",
+    scoringSkippedBusy: "המשרות נשמרו, אבל דירוג אחר כבר מתבצע. אפשר לדרג אותן בעוד רגע.",
+    scoringSkippedUnavailable: "המשרות נשמרו, אבל שירות הדירוג אינו מוגדר בשרת.",
+    scoringFailed: 'המשרות נשמרו, אבל הדירוג נכשל. אפשר לנסות שוב בכפתור "דרגי משרות".',
+    allFailed: "לא הצלחנו לקרוא אף מייל. נסי שוב בעוד רגע.",
+    notConnected: "Gmail אינו מחובר. אפשר לחבר אותו בעמוד הפרופיל.",
+    alreadyRunning: "סנכרון כבר מתבצע. נסי שוב בעוד רגע.",
+    notConfigured: "חילוץ המשרות אינו מוגדר בשרת.",
+    googleFailed: "לא הצלחנו לקרוא את Gmail. נסי שוב בעוד רגע.",
   },
 
   scoring: {

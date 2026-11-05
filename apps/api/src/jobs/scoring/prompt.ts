@@ -39,6 +39,7 @@ Scoring scale (integer 0-100):
 - 25-49: weak fit. Little overlap, or the role differs clearly from what the candidate wants.
 - 0-24: not a fit. A different field or level.
 Use the whole range. Do not give a high score just because the job text is enthusiastic or long.
+If <description> has partial="true", it is only a short snippet from a job-alert email, not the full posting. Score what it states, do not count details it does not mention as gaps of the job, and avoid extreme scores because the information is limited.
 
 Rules:
 - Base "matches" and "gaps" only on what is written in the CV and the job. Do not invent skills or experience the CV does not state.
@@ -66,6 +67,8 @@ export interface ScoringJob {
   title: string;
   company: string;
   description: string;
+  // EMAIL_SNIPPET: the description is only a short snippet from a job-alert email.
+  descriptionSource?: "FULL" | "EMAIL_SNIPPET";
 }
 
 export function buildScoringRequest(
@@ -84,7 +87,7 @@ ${escapeForTag(lookingFor)}
 <job>
 <title>${escapeForTag(clip(job.title, MAX_SHORT_FIELD_CHARS))}</title>
 <company>${escapeForTag(clip(job.company, MAX_SHORT_FIELD_CHARS))}</company>
-<description>
+<description${job.descriptionSource === "EMAIL_SNIPPET" ? ' partial="true"' : ""}>
 ${escapeForTag(clip(job.description, MAX_DESCRIPTION_CHARS))}
 </description>
 </job>

@@ -62,6 +62,19 @@ describe("buildScoringRequest", () => {
     assert.ok(user.length < MAX_DESCRIPTION_CHARS + profile.cvText.length + 1000);
   });
 
+  it("marks a description that is only a snippet from an email as partial, and only then", () => {
+    const profile = { cvText: "cv", lookingFor: "wishes" };
+    const job = { title: "T", company: "C", description: "short snippet" };
+    const snippet = buildScoringRequest(profile, { ...job, descriptionSource: "EMAIL_SNIPPET" });
+    assert.match(snippet.user, /<description partial="true">/);
+    assert.match(snippet.system, /partial="true"/);
+    for (const full of [job, { ...job, descriptionSource: "FULL" as const }]) {
+      const request = buildScoringRequest(profile, full);
+      assert.match(request.user, /<description>/);
+      assert.equal(request.user.includes("partial"), false);
+    }
+  });
+
   it("states that nothing is specified when there are no wishes", () => {
     const { user } = buildScoringRequest({ ...profile, lookingFor: "  " }, job);
     assert.match(user, /<candidate_wishes>\n\(not specified\)\n<\/candidate_wishes>/);

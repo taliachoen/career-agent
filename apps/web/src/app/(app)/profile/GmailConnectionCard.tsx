@@ -7,6 +7,7 @@ import { Notice } from "../../../components/Notice";
 import { ApiError } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth";
 import { he } from "../../../lib/strings.he";
+import { SendersSection } from "./SendersSection";
 
 type LoadState =
   { status: "loading" } | { status: "error" } | { status: "done"; gmail: GmailStatus };
@@ -167,6 +168,8 @@ export function GmailConnectionCard() {
           </button>
         </div>
       )}
+
+      {load.status === "done" && load.gmail.state === "connected" && <SendersSection />}
 
       {load.status === "done" && load.gmail.state === "needs_reconnect" && (
         <div className="space-y-3">

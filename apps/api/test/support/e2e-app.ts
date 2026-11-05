@@ -90,3 +90,19 @@ export async function startTestApp(options: StartOptions = {}): Promise<TestApp>
     },
   };
 }
+
+/** Connects the user's Gmail through the real OAuth endpoints, with the fake Google. */
+export async function connectGmail(app: TestApp, user: { token: string }): Promise<void> {
+  const started = await app.request("POST", "/gmail/connect", { token: user.token });
+  const state = new URL(started.body.authUrl).searchParams.get("state")!;
+  const done = await app.request(
+    "GET",
+    `/gmail/oauth/callback?${new URLSearchParams({ code: "fake-ok", state })}`,
+  );
+  if (!done.location?.endsWith("/profile?gmail=connected")) {
+    throw new Error("Could not connect Gmail in the test");
+  }
+}
+
+/** A CV long enough to pass validation, so scoring can run. */
+export const TEST_PROFILE = { cvText: "Full Stack developer with TypeScript, React and NestJS. ".repeat(8), lookingFor: "Full Stack, center" };

@@ -30,3 +30,25 @@ export async function logInThroughUi(page: Page, email: string, password = PASSW
   await page.getByLabel("סיסמה").fill(password);
   await page.getByRole("button", { name: "התחברות" }).click();
 }
+
+/** Connects Gmail through the real OAuth endpoints; the API runs with the fake Google. */
+export async function connectGmailViaApi(request: APIRequestContext, token: string) {
+  const started = await request.post(`${API_URL}/gmail/connect`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  expect(started.status()).toBe(200);
+  const { authUrl } = (await started.json()) as { authUrl: string };
+  // The fake consent screen is a link straight to the callback; follow it by hand.
+  const done = await request.get(authUrl, { maxRedirects: 0 });
+  expect(done.status()).toBe(302);
+  expect(done.headers().location).toMatch(/\/profile\?gmail=connected$/);
+}
+
+/** A saved profile, so that scoring can run. */
+export async function saveProfileViaApi(request: APIRequestContext, token: string) {
+  const saved = await request.put(`${API_URL}/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { cvText: "ניסיון בפיתוח Full Stack עם TypeScript, React ו-NestJS. ".repeat(6), lookingFor: "Full Stack" },
+  });
+  expect(saved.status()).toBe(200);
+}

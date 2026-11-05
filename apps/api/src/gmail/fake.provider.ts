@@ -3,8 +3,11 @@ import {
   GMAIL_READONLY_SCOPE,
   GmailProviderError,
   type ExchangedTokens,
+  type GmailMessage,
   type GmailProvider,
 } from "./gmail-provider.js";
+import { sampleMailbox, type FakeMessage } from "./fake-mailbox.js";
+import { parseFromHeader, senderAllowed } from "../ingest/senders.js";
 
 // Deterministic stand-in for tests and local development. It never leaves the process.
 // The authorization code steers what the "Google" side answers:
@@ -81,6 +84,65 @@ export class FakeGmailProvider implements GmailProvider {
       throw new GmailProviderError("invalid_grant");
     }
     return "fake-access-refreshed";
+  }
+
+  // The mailbox every fake connection reads. Tests replace it; the default is the invented
+  // sample mail, so a local run with GMAIL_PROVIDER=fake has something to sync.
+  static mailbox: FakeMessage[] = sampleMailbox();
+  // What the sync asked for, for tests: the last search, and every message that was fetched.
+  static lastQuery: string | null = null;
+  static fetchedIds: string[] = [];
+  // When set, fetching a message waits for it. Lets a test hold a sync in the middle.
+  static holdFetch: Promise<void> | null = null;
+
+  static resetMailbox(): void {
+    FakeGmailProvider.mailbox = sampleMailbox();
+    FakeGmailProvider.lastQuery = null;
+    FakeGmailProvider.fetchedIds = [];
+    FakeGmailProvider.holdFetch = null;
+  }
+
+  // Understands only what the sync's own query uses: is:unread, newer_than:Nd and from:x terms.
+  async listMessageIds(input: {
+    accessToken: string;
+    query: string;
+    maxResults: number;
+    pageToken?: string;
+  }): Promise<{ ids: string[]; nextPageToken: string | null }> {
+    FakeGmailProvider.lastQuery = input.query;
+    const unreadOnly = /\bis:unread\b/.test(input.query);
+    const days = Number(/\bnewer_than:(\d+)d\b/.exec(input.query)?.[1] ?? Infinity);
+    const senders = [...input.query.matchAll(/\bfrom:([^\s()]+)/g)].map((match) => match[1]!);
+    const matching = FakeGmailProvider.mailbox.filter((message) => {
+      if (unreadOnly && message.unread === false) return false;
+      if ((message.ageDays ?? 1) > days) return false;
+      const from = parseFromHeader(message.from);
+      return senders.length === 0 || (from !== null && senderAllowed(from, senders));
+    });
+    const offset = Number(input.pageToken ?? 0);
+    const page = matching.slice(offset, offset + input.maxResults);
+    const next = offset + input.maxResults;
+    return {
+      ids: page.map((message) => message.id),
+      nextPageToken: next < matching.length ? String(next) : null,
+    };
+  }
+
+  async getMessage(_accessToken: string, id: string): Promise<GmailMessage> {
+    FakeGmailProvider.fetchedIds.push(id);
+    if (FakeGmailProvider.holdFetch) await FakeGmailProvider.holdFetch;
+    const message = FakeGmailProvider.mailbox.find((candidate) => candidate.id === id);
+    if (!message || message.failFetch) {
+      throw new GmailProviderError("request_failed");
+    }
+    return {
+      id: message.id,
+      from: message.from,
+      subject: message.subject,
+      authResults: message.authResults,
+      text: message.text ?? null,
+      html: message.html ?? null,
+    };
   }
 
   async revokeToken(token: string): Promise<void> {

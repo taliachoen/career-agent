@@ -10,6 +10,19 @@ export interface ExchangedTokens {
   scopes: string[];
 }
 
+// One message as the sync needs it: the headers it checks and the decoded bodies. Attachments
+// are never read. Everything in it is untrusted input.
+export interface GmailMessage {
+  id: string;
+  // The raw From header, e.g. `Name <address@example.com>`.
+  from: string;
+  subject: string;
+  // Every Authentication-Results header value. Only the ones Gmail itself added are trusted.
+  authResults: string[];
+  text: string | null;
+  html: string | null;
+}
+
 // Everything that talks to Google goes through this interface, so tests use a fake.
 // Implementations must never put a token, code or secret in an error message.
 export interface GmailProvider {
@@ -25,6 +38,14 @@ export interface GmailProvider {
   // Accepts a refresh or an access token. Throws GmailProviderError("invalid_grant") when
   // it was already revoked.
   revokeToken(token: string): Promise<void>;
+  // Ids of the messages matching a Gmail search query, newest first. Read-only.
+  listMessageIds(input: {
+    accessToken: string;
+    query: string;
+    maxResults: number;
+    pageToken?: string;
+  }): Promise<{ ids: string[]; nextPageToken: string | null }>;
+  getMessage(accessToken: string, id: string): Promise<GmailMessage>;
 }
 
 export class GmailNotConfiguredError extends Error {

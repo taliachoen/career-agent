@@ -12,16 +12,26 @@ enum JobSource {
   EMAIL
 }
 
+// What a job's description is. A job found in an alert email has only the snippet from the
+// email (the app does not fetch job pages), so its score rests on less than a full text.
+enum JobDescriptionSource {
+  FULL
+  EMAIL_SNIPPET
+}
+
 model Job {
-  id          String       @id @default(uuid())
-  title       String
-  company     String
-  description String
-  userId      String
-  user        User         @relation(fields: [userId], references: [id])
-  createdAt   DateTime     @default(now())
-  postings    JobPosting[]
-  score       JobScore?
+  id                String               @id @default(uuid())
+  title             String
+  company           String
+  description       String
+  descriptionSource JobDescriptionSource @default(FULL)
+  // From the alert email, when it says where the job is. Manual jobs have none.
+  location          String?
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id])
+  createdAt         DateTime             @default(now())
+  postings          JobPosting[]
+  score             JobScore?
 
   // Target of JobPosting's composite foreign key (a posting must share its job's owner).
   @@unique([id, userId])
@@ -71,13 +81,15 @@ model JobScore {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  jobs         Job[]
-  profile      Profile?
-  gmail        GmailConnection?
+  id            String                  @id @default(uuid())
+  email         String                  @unique
+  passwordHash  String
+  createdAt     DateTime                @default(now())
+  jobs          Job[]
+  profile       Profile?
+  gmail         GmailConnection?
+  gmailSenders  GmailSender[]
+  gmailMessages GmailProcessedMessage[]
 }
 
 enum GmailConnectionStatus {
@@ -121,4 +133,37 @@ model Profile {
   lookingFor String   @default("")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// A sender the user added to the allowed list: a full address or a domain, lowercase.
+// Alert emails are read only from allowed senders (the built-in list plus these).
+model GmailSender {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value     String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, value])
+}
+
+enum GmailMessageStatus {
+  DONE
+  FAILED
+}
+
+// Which Gmail messages a sync has handled. Gmail access is read-only, so the mail cannot be
+// marked as read; this is how the next sync skips it. Only the message id is kept: no sender,
+// subject or content.
+model GmailProcessedMessage {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageId   String
+  status      GmailMessageStatus
+  // Failed attempts so far. A message that keeps failing is given up on, see SyncService.
+  attempts    Int                @default(0)
+  processedAt DateTime           @default(now())
+
+  @@unique([userId, messageId])
 }

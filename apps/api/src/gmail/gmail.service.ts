@@ -1,4 +1,6 @@
 import {
+  BadGatewayException,
+  BadRequestException,
   Inject,
   Injectable,
   Logger,
@@ -135,6 +137,73 @@ export class GmailService {
       this.failedVerifications.set(userId, Date.now());
       this.logger.warn(`Could not verify the Gmail connection (${errorName(error)})`);
     }
+  }
+
+  // A fresh access token for reading mail. The access token is never stored: it is made from
+  // the refresh token each time. Throws a clear HTTP error when the connection cannot be used.
+  async getAccessToken(userId: string): Promise<string> {
+    try {
+      this.provider.checkReady();
+    } catch (error) {
+      throw this.unavailable(error);
+    }
+    const connection = await this.prisma.gmailConnection.findUnique({
+      where: { userId },
+      select: { status: true, encryptedRefreshToken: true },
+    });
+    if (!connection || connection.status === "PENDING") {
+      throw new BadRequestException("Gmail is not connected");
+    }
+    if (connection.status === "NEEDS_RECONNECT" || !connection.encryptedRefreshToken) {
+      throw new BadRequestException("Gmail needs to be reconnected");
+    }
+    try {
+      const refreshToken = decryptToken(
+        connection.encryptedRefreshToken,
+        userId,
+        parseEncryptionKey(),
+      );
+      return await withTimeout(this.provider.refreshAccessToken(refreshToken), VERIFY_TIMEOUT_MS);
+    } catch (error) {
+      if (error instanceof GmailProviderError && error.code === "invalid_grant") {
+        this.logger.warn(
+          "Gmail refresh token is no longer valid; marking the connection as needing reconnect",
+        );
+        await this.prisma.gmailConnection.updateMany({
+          where: {
+            userId,
+            status: "CONNECTED",
+            encryptedRefreshToken: connection.encryptedRefreshToken,
+          },
+          data: {
+            status: "NEEDS_RECONNECT",
+            encryptedRefreshToken: null,
+            scope: null,
+            lastVerifiedAt: new Date(),
+          },
+        });
+        throw new BadRequestException("Gmail needs to be reconnected");
+      }
+      if (error instanceof GmailNotConfiguredError) {
+        throw this.unavailable(error);
+      }
+      this.logger.warn(`Could not get a Gmail access token (${errorName(error)})`);
+      throw new BadGatewayException("Could not reach Google. Try again in a moment");
+    }
+  }
+
+  // Read-only mail access for the sync. Errors are GmailProviderError, with a fixed code.
+  listMessageIds(input: {
+    accessToken: string;
+    query: string;
+    maxResults: number;
+    pageToken?: string;
+  }) {
+    return this.provider.listMessageIds(input);
+  }
+
+  getMessage(accessToken: string, id: string) {
+    return this.provider.getMessage(accessToken, id);
   }
 
   async startConnect(userId: string): Promise<GmailConnectResult> {
@@ -301,6 +370,7 @@ export class GmailService {
     }
   }
 
+  // Maps "not configured" to the 503 the web app understands; anything else is left as it is.
   private unavailable(error: unknown): unknown {
     if (error instanceof GmailNotConfiguredError) {
       return new ServiceUnavailableException("Gmail connection is not configured on the server");

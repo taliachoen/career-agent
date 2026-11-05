@@ -10,5 +10,7 @@ import { ScoringService } from "./scoring.service.js";
   imports: [PrismaModule, AuthModule, LlmModule],
   controllers: [JobsController],
   providers: [JobsService, ScoringService],
+  // The email sync scores the jobs it adds with the same service as the scoring button.
+  exports: [ScoringService],
 })
 export class JobsModule {}

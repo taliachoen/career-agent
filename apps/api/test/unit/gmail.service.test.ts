@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { describe, it } from "node:test";
-import { NotFoundException } from "@nestjs/common";
+import { BadGatewayException, BadRequestException, NotFoundException } from "@nestjs/common";
 import {
   GMAIL_READONLY_SCOPE,
   GmailProviderError,
@@ -49,7 +49,7 @@ function setup(initial: Row | null, provider: Partial<GmailProvider>) {
       ),
     },
   } as unknown as PrismaService;
-  const service = new GmailService(prisma, provider as GmailProvider);
+  const service = new GmailService(prisma, { checkReady() {}, ...provider } as GmailProvider);
   return { service, calls, row: () => row, setRow: (next: Row | null) => (row = next) };
 }
 
@@ -227,6 +227,72 @@ describe("GmailService", () => {
   it("disconnect without a connection is a 404", async () => {
     const { service } = setup(null, {});
     await assert.rejects(() => service.disconnect("user-1"), NotFoundException);
+  });
+
+  it("getAccessToken: not connected and pending are 400s, and Google is not asked", async () => {
+    const provider = { refreshAccessToken: async () => assert.fail("should not refresh") };
+    for (const row of [
+      null,
+      {
+        status: "PENDING",
+        googleEmail: null,
+        encryptedRefreshToken: null,
+        scope: null,
+        lastVerifiedAt: null,
+      } as Row,
+    ]) {
+      const { service } = setup(row, provider);
+      await assert.rejects(
+        () => service.getAccessToken("user-1"),
+        (error: unknown) =>
+          error instanceof BadRequestException && /not connected/.test(error.message),
+      );
+    }
+  });
+
+  it("getAccessToken: a connection that needs reconnecting is a clear 400", async () => {
+    const { service } = setup(
+      connected("user-1", { status: "NEEDS_RECONNECT", encryptedRefreshToken: null }),
+      {
+        refreshAccessToken: async () => assert.fail("should not refresh"),
+      },
+    );
+    await assert.rejects(
+      () => service.getAccessToken("user-1"),
+      (error: unknown) => error instanceof BadRequestException && /reconnected/.test(error.message),
+    );
+  });
+
+  it("getAccessToken: makes an access token from the stored refresh token", async () => {
+    const { service } = setup(connected("user-1"), {
+      refreshAccessToken: async (token) => (assert.equal(token, "1//refresh"), "access-123"),
+    });
+    assert.equal(await service.getAccessToken("user-1"), "access-123");
+  });
+
+  it("getAccessToken: a dead refresh token marks the connection as needing reconnect", async () => {
+    const { service, row } = setup(connected("user-1"), {
+      refreshAccessToken: async () => {
+        throw new GmailProviderError("invalid_grant");
+      },
+    });
+    await assert.rejects(
+      () => service.getAccessToken("user-1"),
+      (error: unknown) => error instanceof BadRequestException && /reconnected/.test(error.message),
+    );
+    assert.equal(row()!.status, "NEEDS_RECONNECT");
+    assert.equal(row()!.encryptedRefreshToken, null);
+  });
+
+  it("getAccessToken: another failure is a 502 and leaves the connection alone", async () => {
+    const { service, row } = setup(connected("user-1"), {
+      refreshAccessToken: async () => {
+        throw new GmailProviderError("request_failed");
+      },
+    });
+    await assert.rejects(() => service.getAccessToken("user-1"), BadGatewayException);
+    assert.equal(row()!.status, "CONNECTED");
+    assert.notEqual(row()!.encryptedRefreshToken, null);
   });
 
   it("looks up every row by the given user id", async () => {
